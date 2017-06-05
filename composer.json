@@ -1,0 +1,26 @@
+{
+    "name": "gtt/doctrine-auditable-bundle",
+    "type": "symfony-bundle",
+    "description": "Doctrine auditable bundle is alternative for DoctrineExtensions Loggable",
+    "keywords": [
+        "gtt",
+        "symfony",
+        "doctrine",
+        "auditable",
+        "loggable",
+        "bundle"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": ">=5.4",
+        "symfony/framework-bundle": "~2.7",
+        "symfony/property-access": "~2.7",
+        "doctrine/doctrine-bundle": "~1.2",
+        "doctrine/orm": "~2.2,>=2.2.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Gtt\\Bundle\\DoctrineAdapterBundle\\": ""
+        }
+    }
+}
