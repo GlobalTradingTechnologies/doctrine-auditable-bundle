@@ -62,7 +62,7 @@ class CachedAnnotation implements AnnotationInterface
             return $this->configs[$class];
         }
 
-        $entityManager = $this->registry->getEntityManagerForClass($class);
+        $entityManager = $this->registry->getManagerForClass($class);
         $factory       = $entityManager->getMetadataFactory();
         if (null !== $cacheDriver = $factory->getCacheDriver()) {
             $cacheId = $this->generateCacheId($class);

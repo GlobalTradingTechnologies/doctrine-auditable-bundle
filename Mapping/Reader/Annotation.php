@@ -56,7 +56,7 @@ class Annotation implements AnnotationInterface
             'columns' => []
         ];
 
-        $entityManager   = $this->registry->getEntityManagerForClass($class);
+        $entityManager   = $this->registry->getManagerForClass($class);
         $metadataFactory = $entityManager->getMetadataFactory();
         $meta            = $metadataFactory->getMetadataFor($class);
         $reflectionClass = $meta->getReflectionClass();
