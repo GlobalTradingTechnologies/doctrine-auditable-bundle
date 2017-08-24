@@ -17,7 +17,7 @@ Installation
 ===
 1. Install bundle
 ```
-composer require "gtt/doctrine-auditable-bundle:~1.0.0""
+composer require "gtt/doctrine-auditable-bundle"
 ```
 
 2. Add to AppKernel.php
@@ -55,18 +55,18 @@ use Gtt\Bundle\DoctrineAdapterBundle\Mapping\Annotation as Auditable;
  */
 class Entity
 {
-        /**
-         * Name
-         *
-         * @var string
-         *
-         * @ORM\Column(type="string", name="name", length=255)
-         *
-         * @Auditable\Property
-         */
-        protected $assignedUser;
-        
-        ...
+    /**
+     * Name
+     *
+     * @var string
+     *
+     * @ORM\Column(type="string", name="name", length=255)
+     *
+     * @Auditable\Property
+     */
+    protected $assignedUser;
+    
+    ...
 }
 ```
 
@@ -78,7 +78,7 @@ If you need comment changes then add property for comment and add annotation att
  * @ORM\Entity
  * @ORM\Table(name="entity")
  *
- * @Auditable\Entity(commentProperty="changelogComment")
+ * @Auditable\Entity(commentProperty="comment")
  */
 class Entity
 {
@@ -94,7 +94,7 @@ class Entity
 
     public function getComment()
     {
-        return $this->Comment;
+        return $this->comment;
     }
 }
 ```
@@ -103,7 +103,7 @@ Set you comment
 ```php
 ...
 $entity->setName('Any name');
-$ntity->setComment('Set any name to the entity');
+$entity->setComment('Set any name to the entity');
 $entityManager->flush();
 ...
 ```
