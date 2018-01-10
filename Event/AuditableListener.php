@@ -8,6 +8,7 @@
 
 namespace Gtt\Bundle\DoctrineAdapterBundle\Event;
 
+use Doctrine\DBAL\Types\DateTimeType;
 use Gtt\Bundle\DoctrineAdapterBundle\Mapping\Reader\AnnotationInterface;
 use DateTime;
 use DateTimeInterface;
@@ -29,6 +30,11 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
  */
 class AuditableListener implements EventSubscriber
 {
+    /**
+     * Datetime with timezone format (ISO 8601)
+     */
+    const DATETIME_WITH_TIMEZONE_FORMAT = 'c';
+
     /**
      * Token storage
      *
@@ -154,9 +160,20 @@ class AuditableListener implements EventSubscriber
                         $type = Type::getType($type);
                     }
 
-                    $platform    = $this->entityManager->getConnection()->getDatabasePlatform();
-                    $valueBefore = $type->convertToDatabaseValue($columnsChangeSet[$column][0], $platform);
-                    $valueAfter  = $type->convertToDatabaseValue($columnsChangeSet[$column][1], $platform);
+                    $valueBefore = $columnsChangeSet[$column][0];
+                    $valueAfter  = $columnsChangeSet[$column][1];
+
+                    if ($type instanceof DateTimeType) {
+                        $valueBefore = is_null($valueBefore) ? null : $valueBefore->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
+                        $valueAfter  = is_null($valueBefore) ? null : $valueAfter->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
+                    } elseif ($type instanceof Type) {
+                        $platform    = $this->entityManager->getConnection()->getDatabasePlatform();
+                        $valueBefore = $type->convertToDatabaseValue($valueBefore, $platform);
+                        $valueAfter  = $type->convertToDatabaseValue($valueAfter, $platform);
+                    } else {
+                        $valueBefore = is_null($valueBefore) ? null : (string) $valueBefore;
+                        $valueAfter  = is_null($valueBefore) ? null : (string) $valueBefore;
+                    }
 
                     /** @var Entry $entry */
                     $entry = $this->createEntry($group, $column, false, $valueBefore, $valueAfter);
