@@ -6,7 +6,7 @@
 
     <services>
 
-        <service id="gtt.doctrine_auditable.event.auditable_listener" class="Gtt\Bundle\DoctrineAdapterBundle\Event\AuditableListener">
+        <service id="gtt.doctrine_auditable.event.auditable_subscriber" class="Gtt\Bundle\DoctrineAdapterBundle\Event\AuditableSubscriber">
             <argument type="service" id="security.token_storage" />
             <argument type="service" id="gtt.doctrine_auditable.mapping.reader.cached_annotation" />
             <tag name="doctrine.event_subscriber" />

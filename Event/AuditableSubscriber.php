@@ -9,10 +9,8 @@
 namespace Gtt\Bundle\DoctrineAdapterBundle\Event;
 
 use Doctrine\DBAL\Types\DateTimeType;
-use Gtt\Bundle\DoctrineAdapterBundle\Mapping\Reader\AnnotationInterface;
 use DateTime;
 use DateTimeInterface;
-use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\Common\EventSubscriber;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManager;
@@ -21,14 +19,15 @@ use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Gtt\Bundle\DoctrineAdapterBundle\Entity\Entry;
 use Gtt\Bundle\DoctrineAdapterBundle\Entity\Group;
 use Gtt\Bundle\DoctrineAdapterBundle\Entity\GroupSuperClass;
-use Gtt\Bundle\DoctrineAdapterBundle\Mapping\Reader\Annotation;
+use Gtt\Bundle\DoctrineAdapterBundle\Exception\InvalidMappingException;
+use Gtt\Bundle\DoctrineAdapterBundle\Mapping\Reader\AnnotationInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 /**
- * Auditable listener
+ * Auditable subscriber
  */
-class AuditableListener implements EventSubscriber
+class AuditableSubscriber implements EventSubscriber
 {
     /**
      * Datetime with timezone format (ISO 8601)
@@ -119,87 +118,90 @@ class AuditableListener implements EventSubscriber
             return;
         }
 
-        if ($config = $this->reader->read($class)) {
-            $uow       = $this->entityManager->getUnitOfWork();
-            $changeSet = $uow->getEntityChangeSet($entity);
+        $config = $this->getClassConfiguration($meta);
+        if (empty($config)) {
+            return;
+        }
 
-            $columnsChangeSet = $this->getColumnsChangeSet($meta, $changeSet);
-            $toOneChangeSet   = $this->getToOneChangeSet($meta, $changeSet);
+        $uow       = $this->entityManager->getUnitOfWork();
+        $changeSet = $uow->getEntityChangeSet($entity);
 
-            $affectedAuditableColumns      = array_intersect(array_keys($columnsChangeSet), $config['columns']);
-            $affectedAuditableAssociations = array_intersect(array_keys($toOneChangeSet), $config['columns']);
+        $columnsChangeSet = $this->getColumnsChangeSet($meta, $changeSet);
+        $toOneChangeSet   = $this->getToOneChangeSet($meta, $changeSet);
 
-            if (count($affectedAuditableColumns) > 0 || count($affectedAuditableAssociations) > 0) {
+        $affectedAuditableColumns      = array_intersect(array_keys($columnsChangeSet), $config['columns']);
+        $affectedAuditableAssociations = array_intersect(array_keys($toOneChangeSet), $config['columns']);
 
-                $comment = null;
-                if (isset($config['commentProperty'])) {
-                    $accessor = PropertyAccess::createPropertyAccessor();
-                    $comment  = $accessor->getValue($entity, $config['commentProperty']);
-                    $accessor->setValue($entity, $config['commentProperty'], null);
+        if (count($affectedAuditableColumns) > 0 || count($affectedAuditableAssociations) > 0) {
+
+            $comment = null;
+            if (isset($config['commentProperty'])) {
+                $accessor = PropertyAccess::createPropertyAccessor();
+                $comment  = $accessor->getValue($entity, $config['commentProperty']);
+                $accessor->setValue($entity, $config['commentProperty'], null);
+            }
+
+            /** @var Group $group */
+            $group = $this->createGroup(
+                new DateTime,
+                $this->getUsername(),
+                $meta->name,
+                $this->readEntityId($entity),
+                $comment
+            );
+            $this->entityManager->persist($group);
+
+            // If you create and persist a new entity in onFlush, then calling EntityManager#persist() is not enough
+            // You have to execute an additional call to $unitOfWork->computeChangeSet($classMetadata, $entity)
+            // @see http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/events.html#onflush
+            $groupClassMetadata = $this->entityManager->getClassMetadata(get_class($group));
+            $uow->computeChangeSet($groupClassMetadata, $group);
+
+            foreach ($affectedAuditableColumns as $column) {
+                $type = $meta->getTypeOfField($column);
+                if (is_string($type)) {
+                    $type = Type::getType($type);
                 }
 
-                /** @var Group $group */
-                $group = $this->createGroup(
-                    new DateTime,
-                    $this->getUsername(),
-                    $meta->name,
-                    $this->readEntityId($entity),
-                    $comment
+                $valueBefore = $columnsChangeSet[$column][0];
+                $valueAfter  = $columnsChangeSet[$column][1];
+
+                if ($type instanceof DateTimeType) {
+                    $valueBefore = is_null($valueBefore) ? null : $valueBefore->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
+                    $valueAfter  = is_null($valueBefore) ? null : $valueAfter->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
+                } elseif ($type instanceof Type) {
+                    $platform    = $this->entityManager->getConnection()->getDatabasePlatform();
+                    $valueBefore = $type->convertToDatabaseValue($valueBefore, $platform);
+                    $valueAfter  = $type->convertToDatabaseValue($valueAfter, $platform);
+                } else {
+                    $valueBefore = is_null($valueBefore) ? null : (string) $valueBefore;
+                    $valueAfter  = is_null($valueBefore) ? null : (string) $valueBefore;
+                }
+
+                /** @var Entry $entry */
+                $entry = $this->createEntry($group, $column, false, $valueBefore, $valueAfter);
+                $this->entityManager->persist($entry);
+
+                $entryClassMetadata = $this->entityManager->getClassMetadata(get_class($entry));
+                $uow->computeChangeSet($entryClassMetadata, $entry);
+            }
+
+            foreach ($affectedAuditableAssociations as $association) {
+                $before       = $toOneChangeSet[$association][0];
+                $after        = $toOneChangeSet[$association][1];
+                $valueBefore  = $this->readEntityId($before);
+                $valueAfter   = $this->readEntityId($after);
+                $stringBefore = $this->getEntityStringRepresentation($before);
+                $stringAfter  = $this->getEntityStringRepresentation($after);
+
+                /** @var Entry $entry */
+                $entry = $this->createEntry(
+                    $group, $association, true, $valueBefore, $valueAfter, $stringBefore, $stringAfter
                 );
-                $this->entityManager->persist($group);
+                $this->entityManager->persist($entry);
 
-                // If you create and persist a new entity in onFlush, then calling EntityManager#persist() is not enough
-                // You have to execute an additional call to $unitOfWork->computeChangeSet($classMetadata, $entity)
-                // @see http://docs.doctrine-project.org/projects/doctrine-orm/en/latest/reference/events.html#onflush
-                $groupClassMetadata = $this->entityManager->getClassMetadata(get_class($group));
-                $uow->computeChangeSet($groupClassMetadata, $group);
-
-                foreach ($affectedAuditableColumns as $column) {
-                    $type = $meta->getTypeOfField($column);
-                    if (is_string($type)) {
-                        $type = Type::getType($type);
-                    }
-
-                    $valueBefore = $columnsChangeSet[$column][0];
-                    $valueAfter  = $columnsChangeSet[$column][1];
-
-                    if ($type instanceof DateTimeType) {
-                        $valueBefore = is_null($valueBefore) ? null : $valueBefore->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
-                        $valueAfter  = is_null($valueBefore) ? null : $valueAfter->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
-                    } elseif ($type instanceof Type) {
-                        $platform    = $this->entityManager->getConnection()->getDatabasePlatform();
-                        $valueBefore = $type->convertToDatabaseValue($valueBefore, $platform);
-                        $valueAfter  = $type->convertToDatabaseValue($valueAfter, $platform);
-                    } else {
-                        $valueBefore = is_null($valueBefore) ? null : (string) $valueBefore;
-                        $valueAfter  = is_null($valueBefore) ? null : (string) $valueBefore;
-                    }
-
-                    /** @var Entry $entry */
-                    $entry = $this->createEntry($group, $column, false, $valueBefore, $valueAfter);
-                    $this->entityManager->persist($entry);
-
-                    $entryClassMetadata = $this->entityManager->getClassMetadata(get_class($entry));
-                    $uow->computeChangeSet($entryClassMetadata, $entry);
-                }
-
-                foreach ($affectedAuditableAssociations as $association) {
-                    $before       = $toOneChangeSet[$association][0];
-                    $after        = $toOneChangeSet[$association][1];
-                    $valueBefore  = $this->readEntityId($before);
-                    $valueAfter   = $this->readEntityId($after);
-                    $stringBefore = $this->getEntityStringRepresentation($before);
-                    $stringAfter  = $this->getEntityStringRepresentation($after);
-
-                    /** @var Entry $entry */
-                    $entry = $this->createEntry(
-                        $group, $association, true, $valueBefore, $valueAfter, $stringBefore, $stringAfter
-                    );
-                    $this->entityManager->persist($entry);
-
-                    $entryClassMetadata = $this->entityManager->getClassMetadata(get_class($entry));
-                    $uow->computeChangeSet($entryClassMetadata, $entry);
-                }
+                $entryClassMetadata = $this->entityManager->getClassMetadata(get_class($entry));
+                $uow->computeChangeSet($entryClassMetadata, $entry);
             }
         }
     }
@@ -352,9 +354,11 @@ class AuditableListener implements EventSubscriber
      *
      * @param ClassMetadataInfo $meta Class metadata
      *
+     * @throws InvalidMappingException
+     *
      * @return array
      */
-    protected function getClassConfiguration($meta)
+    private function getClassConfiguration(ClassMetadataInfo $meta)
     {
         if (isset($this->configs[$meta->name])) {
             return $this->configs[$meta->name];
@@ -365,16 +369,72 @@ class AuditableListener implements EventSubscriber
             $cacheId = $this->generateCacheId($meta->name);
 
             if (false === $config = $cacheDriver->fetch($cacheId)) {
-                $this->configs[$meta->name] = $this->reader->read($meta);
+                $this->configs[$meta->name] = $this->getAuditableSettings($meta);
 
                 return $this->configs[$meta->name];
             }
         }
 
         // Re-fetch metadata on cache miss
-        $this->configs[$meta->name] = $this->reader->read($meta);
+        $this->configs[$meta->name] = $this->getAuditableSettings($meta);
 
         return $this->configs[$meta->name];
     }
 
+    /**
+     * Build class configuration
+     *
+     * @param ClassMetadataInfo $meta Class metadata
+     *
+     * @throws InvalidMappingException
+     *
+     * @return array
+     */
+    private function getAuditableSettings(ClassMetadataInfo $meta)
+    {
+        // if class has no parent, just return its configuration
+        // or read configuration for each parent class in inheritance chain,
+        // validate, merge them and return otherwise
+        if (empty($meta->parentClasses)) {
+            return $this->reader->read($meta->name);
+        }
+
+        $configurationToMergeMap = [$meta->name => $this->reader->read($meta->name)];
+        // 2. Retrieve all parent classes configuration
+        foreach (array_reverse($meta->parentClasses) as $parentClass) {  // from root to direct parent
+            $configurationToMergeMap[$parentClass] = $this->reader->read($parentClass);
+        }
+
+        // 3. Validate configuration inheritance
+        $isParentConfigured = false;
+        foreach ($configurationToMergeMap as $className => $classConfiguration) {
+            if (!$isParentConfigured) {
+                $isParentConfigured = !empty($configurationToMergeMap);  // stands that for current class `Entity` annotation exists
+                continue;
+            }
+
+            if ($isParentConfigured && isset($configurationToMergeMap['commentProperty'])) {  // check for child class only
+                throw new InvalidMappingException(
+                    "Cannot set `commentProperty` for Entity annotation in $className. " .
+                    'It may be set only for `Entity` annotation in eldest parent class.'
+                );
+            }
+        }
+
+        // 4. Build final class configuration: perform configuration inheritance
+        return array_merge_recursive(...$configurationToMergeMap);
+    }
+
+
+    /**
+     * Generate the cache id
+     *
+     * @param string $class Entity class name
+     *
+     * @return string
+     */
+    private function generateCacheId($class)
+    {
+        return str_replace('\\', '_', __CLASS__ . ' - ' . $class);
+    }
 }
