@@ -52,12 +52,12 @@ class Annotation implements AnnotationInterface
      */
     public function read($class)
     {
-        $config = [
-            'columns' => []
-        ];
-
-        $entityManager   = $this->registry->getManagerForClass($class);
+        $entityManager = $this->registry->getManagerForClass($class);
+        if (null === $entityManager) {
+            throw new \LogicException("Class `$class` has no object manager");
+        }
         $metadataFactory = $entityManager->getMetadataFactory();
+        /** @var ClassMetadataInfo $meta */
         $meta            = $metadataFactory->getMetadataFor($class);
         $reflectionClass = $meta->getReflectionClass();
 
@@ -66,6 +66,8 @@ class Annotation implements AnnotationInterface
             return [];
         }
 
+        /** config properties: columns (string[]), commentProperty (string),  */
+        $config = ['columns' => []];
         if (null !== $commentProperty = $classAnnotation->commentProperty) {
             if (!$reflectionClass->hasProperty($commentProperty)) {
                 throw new InvalidMappingException("Comment property '$commentProperty' does not exist.");

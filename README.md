@@ -11,7 +11,7 @@ Features
 - Comments for changes
 - Convenient store (tracked values before and after change stored in the separated columns, instead serialized entity data in the Loggable)
 - Supports custom DBAL types
-
+- Supports class inheritance configuration 
 
 Installation
 ===
