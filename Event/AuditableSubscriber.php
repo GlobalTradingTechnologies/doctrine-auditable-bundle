@@ -422,7 +422,8 @@ class AuditableSubscriber implements EventSubscriber
         }
 
         // 4. Build final class configuration: perform configuration inheritance
-        return array_merge_recursive(...$configurationToMergeMap);
+        $configurationToMergeList = array_values($configurationToMergeMap);
+        return array_merge_recursive(...$configurationToMergeList);
     }
 
 
