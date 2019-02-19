@@ -1,26 +1,24 @@
 <?xml version="1.0" ?>
-
 <container xmlns="http://symfony.com/schema/dic/services"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
-
     <services>
+        <defaults public="false" />
 
-        <service id="gtt.doctrine_auditable.event.auditable_subscriber" class="Gtt\Bundle\DoctrineAdapterBundle\Event\AuditableSubscriber">
-            <argument type="service" id="security.token_storage" />
-            <argument type="service" id="gtt.doctrine_auditable.mapping.reader.cached_annotation" />
+        <service id="Gtt\Bundle\DoctrineAuditableBundle\Event\AuditableSubscriber">
+            <argument type="service" id="security.token_storage" on-invalid="null" />
+            <argument type="service" id="Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\CachedAnnotation" />
             <tag name="doctrine.event_subscriber" />
         </service>
 
-        <service id="gtt.doctrine_auditable.mapping.reader.annotation" class="Gtt\Bundle\DoctrineAdapterBundle\Mapping\Reader\Annotation" public="false">
+        <service id="Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\Annotation">
             <argument type="service" id="annotation_reader" />
             <argument type="service" id="doctrine" />
         </service>
 
-        <service id="gtt.doctrine_auditable.mapping.reader.cached_annotation" class="Gtt\Bundle\DoctrineAdapterBundle\Mapping\Reader\CachedAnnotation" public="false">
-            <argument type="service" id="gtt.doctrine_auditable.mapping.reader.annotation" />
+        <service id="Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\CachedAnnotation">
+            <argument type="service" id="Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\Annotation" />
             <argument type="service" id="doctrine" />
         </service>
-
     </services>
 </container>

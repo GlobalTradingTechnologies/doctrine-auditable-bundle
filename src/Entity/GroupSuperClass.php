@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
@@ -6,7 +7,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Gtt\Bundle\DoctrineAdapterBundle\Entity;
+namespace Gtt\Bundle\DoctrineAuditableBundle\Entity;
 
 use DateTimeInterface;
 use Doctrine\ORM\Mapping as ORM;
@@ -78,18 +79,23 @@ class GroupSuperClass
      * Group constructor.
      *
      * @param DateTimeInterface $createdTs   Crated timestamp
-     * @param string            $username    User name
+     * @param string|null       $username    User name
      * @param string            $entityClass Entity class name
      * @param string            $entityId    Entity ID
-     * @param string            $comment     ChangeSet comment
+     * @param string|null       $comment     ChangeSet comment
      */
-    public function __construct(DateTimeInterface $createdTs, $username, $entityClass, $entityId, $comment)
-    {
-        $this->createdTs   = $createdTs;
-        $this->username    = $username;
+    public function __construct(
+        DateTimeInterface $createdTs,
+        ?string $username,
+        string $entityClass,
+        string $entityId,
+        ?string $comment
+    ) {
+        $this->createdTs = $createdTs;
+        $this->username = $username;
         $this->entityClass = $entityClass;
-        $this->entityId    = $entityId;
-        $this->comment     = $comment;
+        $this->entityId = $entityId;
+        $this->comment = $comment;
     }
 
     /**
@@ -97,7 +103,7 @@ class GroupSuperClass
      *
      * @return integer
      */
-    public function getId()
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -107,7 +113,7 @@ class GroupSuperClass
      *
      * @return DateTimeInterface
      */
-    public function getCreatedTs()
+    public function getCreatedTs(): DateTimeInterface
     {
         return $this->createdTs;
     }
@@ -117,7 +123,7 @@ class GroupSuperClass
      *
      * @return string
      */
-    public function getUsername()
+    public function getUsername(): ?string
     {
         return $this->username;
     }
@@ -127,7 +133,7 @@ class GroupSuperClass
      *
      * @return string
      */
-    public function getEntityClass()
+    public function getEntityClass(): string
     {
         return $this->entityClass;
     }
@@ -137,7 +143,7 @@ class GroupSuperClass
      *
      * @return string
      */
-    public function getEntityId()
+    public function getEntityId(): string
     {
         return $this->entityClass;
     }
@@ -147,7 +153,7 @@ class GroupSuperClass
      *
      * @return string
      */
-    public function getComment()
+    public function getComment(): ?string
     {
         return $this->comment;
     }

@@ -12,15 +12,31 @@
     ],
     "license": "MIT",
     "require": {
-        "php": ">=5.6",
-        "symfony/framework-bundle": "~2.7",
-        "symfony/property-access": "~2.7",
+        "php": "~7.2",
         "doctrine/doctrine-bundle": "~1.2",
-        "doctrine/orm": "~2.2,>=2.2.3"
+        "doctrine/orm": "~2.3",
+        "symfony/config": "~3.4 || ~4.0",
+        "symfony/dependency-injection": "~3.4 || ~4.0",
+        "symfony/http-kernel": "~3.4 || ~4.0",
+        "symfony/property-access": "~3.4 || ~4.0"
+    },
+    "require-dev": {
+        "symfony/security-core": "~3.4 || ~4.0"
+    },
+    "suggest": {
+        "symfony/security-core": "For logging user made change"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "3.x-dev"
+        }
     },
     "autoload": {
         "psr-4": {
-            "Gtt\\Bundle\\DoctrineAdapterBundle\\": "src"
+            "Gtt\\Bundle\\DoctrineAuditableBundle\\": "src"
         }
     }
 }

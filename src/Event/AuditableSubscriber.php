@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
@@ -6,21 +7,21 @@
  * file that was distributed with this source code.
  */
 
-namespace Gtt\Bundle\DoctrineAdapterBundle\Event;
+namespace Gtt\Bundle\DoctrineAuditableBundle\Event;
 
-use Doctrine\DBAL\Types\DateTimeType;
 use DateTime;
 use DateTimeInterface;
 use Doctrine\Common\EventSubscriber;
+use Doctrine\DBAL\Types\DateTimeType;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
-use Gtt\Bundle\DoctrineAdapterBundle\Entity\Entry;
-use Gtt\Bundle\DoctrineAdapterBundle\Entity\Group;
-use Gtt\Bundle\DoctrineAdapterBundle\Entity\GroupSuperClass;
-use Gtt\Bundle\DoctrineAdapterBundle\Exception\InvalidMappingException;
-use Gtt\Bundle\DoctrineAdapterBundle\Mapping\Reader\AnnotationInterface;
+use Gtt\Bundle\DoctrineAuditableBundle\Entity\Entry;
+use Gtt\Bundle\DoctrineAuditableBundle\Entity\Group;
+use Gtt\Bundle\DoctrineAuditableBundle\Entity\GroupSuperClass;
+use Gtt\Bundle\DoctrineAuditableBundle\Exception\InvalidMappingException;
+use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\AnnotationInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
@@ -32,12 +33,12 @@ class AuditableSubscriber implements EventSubscriber
     /**
      * Datetime with timezone format (ISO 8601)
      */
-    const DATETIME_WITH_TIMEZONE_FORMAT = 'c';
+    private const DATETIME_WITH_TIMEZONE_FORMAT = 'c';
 
     /**
      * Token storage
      *
-     * @var TokenStorageInterface
+     * @var TokenStorageInterface|null
      */
     protected $tokenStorage;
 
@@ -60,15 +61,15 @@ class AuditableSubscriber implements EventSubscriber
      *
      * @var array
      */
-    protected $configs;
+    private $configs = [];
 
     /**
      * AuditableListener constructor.
      *
-     * @param TokenStorageInterface $tokenStorage Token storage
-     * @param AnnotationInterface   $reader       Annotation reader
+     * @param TokenStorageInterface|null $tokenStorage Token storage
+     * @param AnnotationInterface        $reader       Annotation reader
      */
-    public function __construct(TokenStorageInterface $tokenStorage, AnnotationInterface $reader)
+    public function __construct(?TokenStorageInterface $tokenStorage, AnnotationInterface $reader)
     {
         $this->reader       = $reader;
         $this->tokenStorage = $tokenStorage;
@@ -79,9 +80,7 @@ class AuditableSubscriber implements EventSubscriber
      */
     public function getSubscribedEvents()
     {
-        return [
-            'onFlush'
-        ];
+        return ['onFlush'];
     }
 
     /**
@@ -91,7 +90,7 @@ class AuditableSubscriber implements EventSubscriber
      *
      * @return void
      */
-    public function onFlush(OnFlushEventArgs $eventArgs)
+    public function onFlush(OnFlushEventArgs $eventArgs): void
     {
         $this->entityManager = $eventArgs->getEntityManager();
         $uow                 = $this->entityManager->getUnitOfWork();
@@ -108,7 +107,7 @@ class AuditableSubscriber implements EventSubscriber
      *
      * @return void
      */
-    protected function createLogEntry($entity)
+    protected function createLogEntry(object $entity): void
     {
         $class = get_class($entity);
         $meta  = $this->entityManager->getClassMetadata($class);
@@ -133,7 +132,6 @@ class AuditableSubscriber implements EventSubscriber
         $affectedAuditableAssociations = array_intersect(array_keys($toOneChangeSet), $config['columns']);
 
         if (count($affectedAuditableColumns) > 0 || count($affectedAuditableAssociations) > 0) {
-
             $comment = null;
             if (isset($config['commentProperty'])) {
                 $accessor = PropertyAccess::createPropertyAccessor();
@@ -143,7 +141,7 @@ class AuditableSubscriber implements EventSubscriber
 
             /** @var Group $group */
             $group = $this->createGroup(
-                new DateTime,
+                new DateTime(),
                 $this->getUsername(),
                 $meta->name,
                 $this->readEntityId($entity),
@@ -167,15 +165,15 @@ class AuditableSubscriber implements EventSubscriber
                 $valueAfter  = $columnsChangeSet[$column][1];
 
                 if ($type instanceof DateTimeType) {
-                    $valueBefore = is_null($valueBefore) ? null : $valueBefore->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
-                    $valueAfter  = is_null($valueBefore) ? null : $valueAfter->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
+                    $valueBefore = $valueBefore === null ? null : $valueBefore->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
+                    $valueAfter  = $valueBefore === null ? null : $valueAfter->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
                 } elseif ($type instanceof Type) {
                     $platform    = $this->entityManager->getConnection()->getDatabasePlatform();
                     $valueBefore = $type->convertToDatabaseValue($valueBefore, $platform);
                     $valueAfter  = $type->convertToDatabaseValue($valueAfter, $platform);
                 } else {
-                    $valueBefore = is_null($valueBefore) ? null : (string) $valueBefore;
-                    $valueAfter  = is_null($valueBefore) ? null : (string) $valueBefore;
+                    $valueBefore = $valueBefore === null ? null : (string) $valueBefore;
+                    $valueAfter  = $valueBefore === null ? null : (string) $valueBefore;
                 }
 
                 /** @var Entry $entry */
@@ -272,9 +270,9 @@ class AuditableSubscriber implements EventSubscriber
      *
      * @param object|null $entity Entity
      *
-     * @return mixed
+     * @return string|null
      */
-    protected function readEntityId($entity = null)
+    protected function readEntityId(object $entity = null): ?string
     {
         if ($entity === null) {
             return null;
@@ -283,22 +281,27 @@ class AuditableSubscriber implements EventSubscriber
         $meta   = $this->entityManager->getClassMetadata(get_class($entity));
         $values = $meta->getIdentifierValues($entity);
 
-        return array_shift($values);
+        return (string) array_shift($values);
     }
 
     /**
      * Create group instance
      *
      * @param DateTimeInterface $createdTs   Crated timestamp
-     * @param string            $username    Username
+     * @param string|null       $username    Username
      * @param string            $entityClass Entity class name
      * @param string            $entityId    Entity ID
-     * @param string            $comment     ChangeSet comment
+     * @param string|null       $comment     ChangeSet comment
      *
      * @return Group
      */
-    protected function createGroup(DateTimeInterface $createdTs, $username, $entityClass, $entityId, $comment)
-    {
+    protected function createGroup(
+        DateTimeInterface $createdTs,
+        ?string $username,
+        string $entityClass,
+        string $entityId,
+        ?string $comment
+    ): Group {
         return new Group($createdTs, $username, $entityClass, $entityId, $comment);
     }
 
@@ -308,21 +311,22 @@ class AuditableSubscriber implements EventSubscriber
      * @param GroupSuperClass $group               ChangeSet group
      * @param string          $entityColumn        Entity column name
      * @param boolean         $association         Column represents association
-     * @param string          $valueBefore         Value before
-     * @param string          $valueAfter          Value after
-     * @param string          $relatedStringBefore Related entity string representation before update (if possible)
-     * @param string          $relatedStringAfter  Related entity string representation after update (if possible)
+     * @param string|null     $valueBefore         Value before
+     * @param string|null     $valueAfter          Value after
+     * @param string|null     $relatedStringBefore Related entity string representation before update (if possible)
+     * @param string|null     $relatedStringAfter  Related entity string representation after update (if possible)
      *
      * @return Entry
      */
-    protected function createEntry($group,
-                                   $entityColumn,
-                                   $association,
-                                   $valueBefore,
-                                   $valueAfter,
-                                   $relatedStringBefore = null,
-                                   $relatedStringAfter = null)
-    {
+    protected function createEntry(
+        GroupSuperClass $group,
+        string $entityColumn,
+        bool $association,
+        ?string $valueBefore,
+        ?string $valueAfter,
+        string $relatedStringBefore = null,
+        string $relatedStringAfter = null
+    ): Entry {
         return new Entry(
             $group,
             $entityColumn,
@@ -339,13 +343,18 @@ class AuditableSubscriber implements EventSubscriber
      *
      * @return string|null
      */
-    protected function getUsername()
+    protected function getUsername(): ?string
     {
-        if (null !== $token = $this->tokenStorage->getToken()) {
-            return $token->getUsername();
+        if ($this->tokenStorage === null) {
+            return null;
         }
 
-        return null;
+        $token = $this->tokenStorage->getToken();
+        if (null === $token) {
+            return null;
+        }
+
+        return $token->getUsername();
     }
 
     /**
@@ -358,17 +367,19 @@ class AuditableSubscriber implements EventSubscriber
      *
      * @return array
      */
-    private function getClassConfiguration(ClassMetadataInfo $meta)
+    private function getClassConfiguration(ClassMetadataInfo $meta): array
     {
         if (isset($this->configs[$meta->name])) {
             return $this->configs[$meta->name];
         }
 
-        $factory = $this->entityManager->getMetadataFactory();
-        if (null !== $cacheDriver = $factory->getCacheDriver()) {
+        $factory     = $this->entityManager->getMetadataFactory();
+        $cacheDriver = $factory->getCacheDriver();
+        if ($cacheDriver !== null) {
             $cacheId = $this->generateCacheId($meta->name);
 
-            if (false === $config = $cacheDriver->fetch($cacheId)) {
+            $config = $cacheDriver->fetch($cacheId);
+            if ($config !== false) {
                 $this->configs[$meta->name] = $this->getAuditableSettings($meta);
 
                 return $this->configs[$meta->name];
@@ -390,7 +401,7 @@ class AuditableSubscriber implements EventSubscriber
      *
      * @return array
      */
-    private function getAuditableSettings(ClassMetadataInfo $meta)
+    private function getAuditableSettings(ClassMetadataInfo $meta): array
     {
         // if class has no parent, just return its configuration
         // or read configuration for each parent class in inheritance chain,
@@ -434,7 +445,7 @@ class AuditableSubscriber implements EventSubscriber
      *
      * @return string
      */
-    private function generateCacheId($class)
+    private function generateCacheId(string $class): string
     {
         return str_replace('\\', '_', __CLASS__ . ' - ' . $class);
     }
