@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
@@ -6,7 +7,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Gtt\Bundle\DoctrineAdapterBundle\Entity;
+namespace Gtt\Bundle\DoctrineAuditableBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
@@ -85,20 +86,21 @@ class EntrySuperClass
     /**
      * Entry constructor.
      *
-     * @param string  $entityColumn        Entity column name
-     * @param boolean $association         Column represents association
-     * @param string  $valueBefore         Value before
-     * @param string  $valueAfter          Value after
-     * @param string  $relatedStringBefore Related entity string representation before update (if possible)
-     * @param string  $relatedStringAfter  Related entity string representation after update (if possible)
+     * @param string      $entityColumn        Entity column name
+     * @param boolean     $association         Column represents association
+     * @param string|null $valueBefore         Value before
+     * @param string|null $valueAfter          Value after
+     * @param string|null $relatedStringBefore Related entity string representation before update (if possible)
+     * @param string|null $relatedStringAfter  Related entity string representation after update (if possible)
      */
-    public function __construct($entityColumn,
-                                $association,
-                                $valueBefore,
-                                $valueAfter,
-                                $relatedStringBefore = null,
-                                $relatedStringAfter = null)
-    {
+    public function __construct(
+        string $entityColumn,
+        bool $association,
+        ?string $valueBefore,
+        ?string $valueAfter,
+        string $relatedStringBefore = null,
+        string $relatedStringAfter = null
+    ) {
         $this->entityColumn        = $entityColumn;
         $this->association         = $association;
         $this->valueBefore         = $valueBefore;
@@ -112,7 +114,7 @@ class EntrySuperClass
      *
      * @return integer
      */
-    public function getId()
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -122,7 +124,7 @@ class EntrySuperClass
      *
      * @return string
      */
-    public function getEntityColumn()
+    public function getEntityColumn(): string
     {
         return $this->entityColumn;
     }
@@ -132,7 +134,7 @@ class EntrySuperClass
      *
      * @return bool
      */
-    public function getAssociation()
+    public function getAssociation(): bool
     {
         return $this->association;
     }
@@ -140,9 +142,9 @@ class EntrySuperClass
     /**
      * Get value before
      *
-     * @return string
+     * @return string|null
      */
-    public function getValueBefore()
+    public function getValueBefore(): ?string
     {
         return $this->valueBefore;
     }
@@ -150,9 +152,9 @@ class EntrySuperClass
     /**
      * Get value after
      *
-     * @return string
+     * @return string|null
      */
-    public function getValueAfter()
+    public function getValueAfter(): ?string
     {
         return $this->valueAfter;
     }
@@ -162,7 +164,7 @@ class EntrySuperClass
      *
      * @return string
      */
-    public function getRelatedStringBefore()
+    public function getRelatedStringBefore(): ?string
     {
         return $this->relatedStringBefore;
     }
@@ -172,7 +174,7 @@ class EntrySuperClass
      *
      * @return string
      */
-    public function getRelatedStringAfter()
+    public function getRelatedStringAfter(): ?string
     {
         return $this->relatedStringAfter;
     }

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
@@ -6,13 +7,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Gtt\Bundle\DoctrineAdapterBundle\Mapping\Reader;
-
-use Doctrine\Common\Annotations\Reader;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
-use Befooz\Bundle\DoctrineAdapterBundle\Exception\InvalidMappingException;
-use Befooz\Bundle\DoctrineAdapterBundle\Mapping\Annotation\Entity;
-use Befooz\Bundle\DoctrineAdapterBundle\Mapping\Annotation\Property;
+namespace Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader;
 
 /**
  * This is auditable annotation mapping reader interface
@@ -25,8 +20,6 @@ interface AnnotationInterface
      * @param string $class Entity class name
      *
      * @return array Config
-     *
-     * @throws InvalidMappingException
      */
     public function read($class);
 }

@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
@@ -6,7 +8,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Gtt\Bundle\DoctrineAdapterBundle\Entity;
+namespace Gtt\Bundle\DoctrineAuditableBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 
@@ -40,14 +42,15 @@ class Entry extends EntrySuperClass
     /**
      * {@inheritdoc}
      */
-    public function __construct(Group $group,
-                                $entityColumn,
-                                $association,
-                                $valueBefore,
-                                $valueAfter,
-                                $relatedStringBefore = null,
-                                $relatedStringAfter = null)
-    {
+    public function __construct(
+        GroupSuperClass $group,
+        string $entityColumn,
+        bool $association,
+        ?string $valueBefore,
+        ?string $valueAfter,
+        string $relatedStringBefore = null,
+        string $relatedStringAfter = null
+    ) {
         parent::__construct(
             $entityColumn,
             $association,
@@ -65,7 +68,7 @@ class Entry extends EntrySuperClass
      *
      * @return Group
      */
-    public function getGroup()
+    public function getGroup(): Group
     {
         return $this->group;
     }

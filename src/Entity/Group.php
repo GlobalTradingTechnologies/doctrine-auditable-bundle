@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
@@ -6,8 +7,9 @@
  * file that was distributed with this source code.
  */
 
-namespace Gtt\Bundle\DoctrineAdapterBundle\Entity;
+namespace Gtt\Bundle\DoctrineAuditableBundle\Entity;
 
+use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -38,11 +40,26 @@ class Group extends GroupSuperClass
     private $entries;
 
     /**
+     * {@inheritdoc}
+     */
+    public function __construct(
+        DateTimeInterface $createdTs,
+        ?string $username,
+        string $entityClass,
+        string $entityId,
+        ?string $comment
+    ) {
+        parent::__construct($createdTs, $username, $entityClass, $entityId, $comment);
+        $this->entries = new ArrayCollection();
+    }
+
+
+    /**
      * Related entries
      *
      * @return ArrayCollection|Entry[]
      */
-    public function getEntries()
+    public function getEntries(): iterable
     {
         return $this->entries;
     }

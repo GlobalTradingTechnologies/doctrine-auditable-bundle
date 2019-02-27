@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
@@ -6,14 +7,10 @@
  * file that was distributed with this source code.
  */
 
-namespace Gtt\Bundle\DoctrineAdapterBundle\Mapping\Reader;
+namespace Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader;
 
 use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\Common\Annotations\Reader;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
-use Gtt\Bundle\DoctrineAdapterBundle\Exception\InvalidMappingException;
-use Gtt\Bundle\DoctrineAdapterBundle\Mapping\Annotation\Entity;
-use Gtt\Bundle\DoctrineAdapterBundle\Mapping\Annotation\Property;
 
 /**
  * This is caching decorator for annotation reader
@@ -64,10 +61,12 @@ class CachedAnnotation implements AnnotationInterface
 
         $entityManager = $this->registry->getManagerForClass($class);
         $factory       = $entityManager->getMetadataFactory();
-        if (null !== $cacheDriver = $factory->getCacheDriver()) {
+        $cacheDriver   = $factory->getCacheDriver();
+        if ($cacheDriver !== null) {
             $cacheId = $this->generateCacheId($class);
 
-            if (false === $config = $cacheDriver->fetch($cacheId)) {
+            $config = $cacheDriver->fetch($cacheId);
+            if ($config === false) {
                 $this->configs[$class] = $this->reader->read($class);
 
                 return $this->configs[$class];
@@ -87,7 +86,7 @@ class CachedAnnotation implements AnnotationInterface
      *
      * @return string
      */
-    protected function generateCacheId($class)
+    protected function generateCacheId(string $class): string
     {
         return str_replace('\\', '_', __CLASS__ . ' - ' . $class);
     }

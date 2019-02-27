@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
@@ -6,14 +7,14 @@
  * file that was distributed with this source code.
  */
 
-namespace Gtt\Bundle\DoctrineAdapterBundle\Mapping\Reader;
+namespace Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader;
 
 use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\Common\Annotations\Reader;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
-use Gtt\Bundle\DoctrineAdapterBundle\Exception\InvalidMappingException;
-use Gtt\Bundle\DoctrineAdapterBundle\Mapping\Annotation\Entity;
-use Gtt\Bundle\DoctrineAdapterBundle\Mapping\Annotation\Property;
+use Gtt\Bundle\DoctrineAuditableBundle\Exception\InvalidMappingException;
+use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation\Entity;
+use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation\Property;
 
 /**
  * This is an annotation mapping driver for Auditable behavioral extension.
@@ -97,7 +98,7 @@ class Annotation implements AnnotationInterface
         }
 
         if (!$meta->isMappedSuperclass && $config) {
-            if (is_array($meta->identifier) && count($meta->identifier) > 1) {
+            if (\is_array($meta->identifier) && \count($meta->identifier) > 1) {
                 throw new InvalidMappingException("Composite identifiers does not support, {$meta->name}");
             }
         }
