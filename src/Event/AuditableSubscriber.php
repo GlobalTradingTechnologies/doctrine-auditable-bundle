@@ -1,11 +1,12 @@
 <?php
-declare(strict_types=1);
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
+declare(strict_types = 1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Event;
 
@@ -18,6 +19,7 @@ use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Gtt\Bundle\DoctrineAuditableBundle\Entity\Entry;
+use Gtt\Bundle\DoctrineAuditableBundle\Entity\EntrySuperClass;
 use Gtt\Bundle\DoctrineAuditableBundle\Entity\Group;
 use Gtt\Bundle\DoctrineAuditableBundle\Entity\GroupSuperClass;
 use Gtt\Bundle\DoctrineAuditableBundle\Exception\InvalidMappingException;
@@ -301,7 +303,7 @@ class AuditableSubscriber implements EventSubscriber
         string $entityClass,
         string $entityId,
         ?string $comment
-    ): Group {
+    ): GroupSuperClass {
         return new Group($createdTs, $username, $entityClass, $entityId, $comment);
     }
 
@@ -326,7 +328,7 @@ class AuditableSubscriber implements EventSubscriber
         ?string $valueAfter,
         string $relatedStringBefore = null,
         string $relatedStringAfter = null
-    ): Entry {
+    ): EntrySuperClass {
         return new Entry(
             $group,
             $entityColumn,
