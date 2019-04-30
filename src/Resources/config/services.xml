@@ -2,10 +2,15 @@
 <container xmlns="http://symfony.com/schema/dic/services"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+    <parameters>
+        <parameter key="gtt.doctrine_auditable.subscriber_class" />  <!-- replaced by container extension -->
+    </parameters>
+
     <services>
         <defaults public="false" />
 
-        <service id="Gtt\Bundle\DoctrineAuditableBundle\Event\AuditableSubscriber">
+        <service id="Gtt\Bundle\DoctrineAuditableBundle\Event\AuditableSubscriber"
+                 class="%gtt.doctrine_auditable.subscriber_class%">
             <argument type="service" id="security.token_storage" on-invalid="null" />
             <argument type="service" id="Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\CachedAnnotation" />
             <tag name="doctrine.event_subscriber" />
