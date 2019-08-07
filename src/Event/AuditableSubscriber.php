@@ -66,6 +66,13 @@ class AuditableSubscriber implements EventSubscriber
     private $configs = [];
 
     /**
+     * Should we use immutable dates?
+     *
+     * @var bool
+     */
+    private $shouldUseImmutableDates = null;
+
+    /**
      * AuditableListener constructor.
      *
      * @param TokenStorageInterface|null $tokenStorage Token storage
@@ -173,10 +180,10 @@ class AuditableSubscriber implements EventSubscriber
                     $platform    = $this->entityManager->getConnection()->getDatabasePlatform();
                     $valueBefore = $type->convertToDatabaseValue($valueBefore, $platform);
                     $valueAfter  = $type->convertToDatabaseValue($valueAfter, $platform);
-                } else {
-                    $valueBefore = $valueBefore === null ? null : (string) $valueBefore;
-                    $valueAfter  = $valueBefore === null ? null : (string) $valueBefore;
                 }
+
+                $valueBefore = $valueBefore === null ? null : (string) $valueBefore;
+                $valueAfter  = $valueAfter === null ? null : (string) $valueAfter;
 
                 /** @var Entry $entry */
                 $entry = $this->createEntry($group, $column, false, $valueBefore, $valueAfter);
@@ -304,6 +311,26 @@ class AuditableSubscriber implements EventSubscriber
         string $entityId,
         ?string $comment
     ): GroupSuperClass {
+        if ($this->shouldUseImmutableDates === null) {
+            $meta = $this->entityManager->getClassMetadata(Group::class);
+
+            $dateField = $meta->getTypeOfField('createdTs');
+            if ($dateField instanceof Type) {
+                $dateField = $dateField->getName();
+            }
+
+            $this->shouldUseImmutableDates = $dateField !== null
+                && \in_array(
+                    $dateField,
+                    [Type::DATE_IMMUTABLE, Type::DATETIME_IMMUTABLE, Type::DATETIMETZ_IMMUTABLE],
+                    true
+                );
+        }
+
+        if ($this->shouldUseImmutableDates && $createdTs instanceof \DateTime) {
+            $createdTs = \DateTimeImmutable::createFromMutable($createdTs);
+        }
+
         return new Group($createdTs, $username, $entityClass, $entityId, $comment);
     }
 

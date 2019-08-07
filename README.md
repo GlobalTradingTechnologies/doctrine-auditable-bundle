@@ -26,7 +26,7 @@ public function registerBundles()
 {
     $bundles = array(
         ...
-        new Gtt\Bundle\DoctrineAdapterBundle\DoctrineAuditableBundle(),
+        new Gtt\Bundle\DoctrineAuditableBundle\DoctrineAuditableBundle(),
     );
     ...
 }
@@ -43,7 +43,7 @@ Add annotation for tracking property
 ```php
 <?php
 
-use Gtt\Bundle\DoctrineAdapterBundle\Mapping\Annotation as Auditable;
+use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation as Auditable;
 
 /**
  * My entity
