@@ -23,6 +23,7 @@ use Gtt\Bundle\DoctrineAuditableBundle\Entity\EntrySuperClass;
 use Gtt\Bundle\DoctrineAuditableBundle\Entity\Group;
 use Gtt\Bundle\DoctrineAuditableBundle\Entity\GroupSuperClass;
 use Gtt\Bundle\DoctrineAuditableBundle\Exception\InvalidMappingException;
+use Gtt\Bundle\DoctrineAuditableBundle\Log;
 use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\AnnotationInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -38,7 +39,8 @@ use function
     get_class,
     is_string,
     method_exists,
-    str_replace
+    str_replace,
+    spl_object_hash
 ;
 
 /**
@@ -87,6 +89,18 @@ class AuditableSubscriber implements EventSubscriber
     private $shouldUseImmutableDates = null;
 
     /**
+     * @var Log\Store|null
+     */
+    private $store;
+
+    /**
+     * Store of change log of entity
+     *
+     * @var array
+     */
+    private $logStore = [];
+
+    /**
      * AuditableListener constructor.
      *
      * @param TokenStorageInterface|null $tokenStorage Token storage
@@ -96,6 +110,20 @@ class AuditableSubscriber implements EventSubscriber
     {
         $this->reader       = $reader;
         $this->tokenStorage = $tokenStorage;
+    }
+
+    /**
+     * Injects auditable logger dependency
+     *
+     * @param Log\Store $store Auditable logger
+     *
+     * @internal
+     *
+     * @deprecated this DI method will be switched to constructor-injection method in next major version.
+     */
+    public function setStore(Log\Store $store): void
+    {
+        $this->store = $store;
     }
 
     /**
@@ -118,17 +146,21 @@ class AuditableSubscriber implements EventSubscriber
         $this->entityManager = $eventArgs->getEntityManager();
         $uow                 = $this->entityManager->getUnitOfWork();
 
+        if ($this->store !== null) {
+            $this->logStore = $this->store->pop($this->entityManager);
+        }
+
         foreach ($uow->getScheduledEntityUpdates() as $entity) {
             $this->createLogEntry($entity);
         }
+
+        $this->logStore = [];
     }
 
     /**
      * Creates log entry
      *
      * @param object $entity Doctrine entity
-     *
-     * @return void
      */
     protected function createLogEntry(object $entity): void
     {
@@ -140,7 +172,7 @@ class AuditableSubscriber implements EventSubscriber
             return;
         }
 
-        $config = $this->getClassConfiguration($meta);
+        $config = $this->getClassConfiguration($meta);  // todo consider to move entity auditable configuration outside entity, to decrease coupling
         if (empty($config)) {
             return;
         }
@@ -160,6 +192,14 @@ class AuditableSubscriber implements EventSubscriber
                 $accessor = PropertyAccess::createPropertyAccessor();
                 $comment  = $accessor->getValue($entity, $config['commentProperty']);
                 $accessor->setValue($entity, $config['commentProperty'], null);
+            }
+
+            if ($this->store !== null) {
+                $entityHash  = spl_object_hash($entity);
+                if (array_key_exists($entityHash, $this->logStore)) {
+                    $comment_ = $this->logStore[$entityHash];
+                    $comment  = $comment_ ?? $comment;  // let this strategy override comment retrieved by old strategy
+                }
             }
 
             /** @var Group $group */
