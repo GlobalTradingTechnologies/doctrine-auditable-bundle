@@ -26,6 +26,20 @@ use Gtt\Bundle\DoctrineAuditableBundle\Exception\InvalidMappingException;
 use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\AnnotationInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use function
+    array_intersect,
+    array_key_exists,
+    array_keys,
+    array_merge_recursive,
+    array_reverse,
+    array_shift,
+    array_values,
+    count,
+    get_class,
+    is_string,
+    method_exists,
+    str_replace
+;
 
 /**
  * Auditable subscriber
