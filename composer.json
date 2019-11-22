@@ -21,6 +21,7 @@
         "symfony/property-access": "~3.4 || ~4.0"
     },
     "require-dev": {
+        "phpunit/phpunit": "^8",
         "symfony/security-core": "~3.4 || ~4.0"
     },
     "suggest": {
@@ -37,6 +38,11 @@
     "autoload": {
         "psr-4": {
             "Gtt\\Bundle\\DoctrineAuditableBundle\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Gtt\\Bundle\\DoctrineAuditableBundle\\": "tests"
         }
     }
 }

@@ -11,13 +11,9 @@ declare(strict_types = 1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Exception;
 
-use Exception;
-
 /**
- * InvalidMappingException
- *
- * Triggered when mapping user argument is not valid or incomplete.
+ * Bundle marker interface
  */
-class InvalidMappingException extends Exception implements DoctrineAuditableExceptionInterface
+interface DoctrineAuditableExceptionInterface
 {
 }

@@ -11,13 +11,11 @@ declare(strict_types = 1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Exception;
 
-use Exception;
+use LogicException;
 
 /**
- * InvalidMappingException
- *
- * Triggered when mapping user argument is not valid or incomplete.
+ * Thrown when no related entity manager was found for entity
  */
-class InvalidMappingException extends Exception implements DoctrineAuditableExceptionInterface
+class NoEntityManagerFoundException extends LogicException implements DoctrineAuditableExceptionInterface
 {
 }

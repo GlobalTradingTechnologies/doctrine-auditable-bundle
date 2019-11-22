@@ -13,6 +13,9 @@
                  class="%gtt.doctrine_auditable.subscriber_class%">
             <argument type="service" id="security.token_storage" on-invalid="null" />
             <argument type="service" id="Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\CachedAnnotation" />
+            <call method="setStore"> <!-- todo replace to constructor-injection method in next major release -->
+                <argument type="service" id="Gtt\Bundle\DoctrineAuditableBundle\Log\Store" />
+            </call>
             <tag name="doctrine.event_subscriber" />
         </service>
 
@@ -24,6 +27,12 @@
         <service id="Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\CachedAnnotation">
             <argument type="service" id="Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\Annotation" />
             <argument type="service" id="doctrine" />
+        </service>
+
+        <service id="Gtt\Bundle\DoctrineAuditableBundle\Log\Store" shared="true">
+            <argument type="service" id="doctrine" />
+            <!-- priority must be lower than `AuditableSubscriber` has -->
+            <tag name="doctrine.event_listener" event="onFlush" method="onFlush" priority="-1024" />
         </service>
     </services>
 </container>

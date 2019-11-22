@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
@@ -9,15 +8,9 @@
 
 declare(strict_types = 1);
 
-namespace Gtt\Bundle\DoctrineAuditableBundle\Exception;
-
-use Exception;
+namespace Gtt\Bundle\DoctrineAuditableBundle\Log\Stub;
 
 /**
- * InvalidMappingException
- *
- * Triggered when mapping user argument is not valid or incomplete.
+ * Entity stub
  */
-class InvalidMappingException extends Exception implements DoctrineAuditableExceptionInterface
-{
-}
+final class Entity {}
