@@ -12,7 +12,7 @@ declare(strict_types = 1);
 namespace Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation;
 
 use Doctrine\Common\Annotations\Annotation;
-use Gtt\Bundle\DoctrineAuditableBundle\Logger\Store;
+use Gtt\Bundle\DoctrineAuditableBundle\Log\Store;
 
 /**
  * Annotation for auditable entity

@@ -26,10 +26,12 @@ final class Configuration implements ConfigurationInterface
      */
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder();
-        $rootNode    = $treeBuilder->root('doctrine_auditable');
+        $treeBuilder = new TreeBuilder('doctrine_auditable');
+        $rootNode    = \method_exists($treeBuilder, 'getRootNode')
+            ? $treeBuilder->getRootNode()
+            : $treeBuilder->root('doctrine_auditable');
 
-        $isWrongAbstraction = function (string $subscriberClass): bool {
+        $isWrongAbstraction = static function (string $subscriberClass): bool {
             return !is_subclass_of($subscriberClass, AuditableSubscriber::class);
         };
 

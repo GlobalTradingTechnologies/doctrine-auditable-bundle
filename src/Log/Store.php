@@ -59,7 +59,6 @@ class Store
      *
      * @param object                 $entity        Entity
      * @param string                 $comment       Comment that describes given entity changes
-     * @param EntityManagerInterface $entityManager Entity manager that manages given entity
      *
      * @throws Exception\NoEntityManagerFoundException When no related entity manager found for given entity
      */

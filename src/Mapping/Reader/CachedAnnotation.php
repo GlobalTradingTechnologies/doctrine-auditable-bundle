@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader;
 
 use Doctrine\Bundle\DoctrineBundle\Registry;
-use Doctrine\Common\Annotations\Reader;
 
 /**
  * This is caching decorator for annotation reader
@@ -41,8 +40,8 @@ class CachedAnnotation implements AnnotationInterface
     /**
      * Annotation constructor.
      *
-     * @param Reader   $reader   Annotation reader
-     * @param Registry $registry Entity managers registry
+     * @param Annotation $reader   Annotation reader
+     * @param Registry   $registry Entity managers registry
      */
     public function __construct(Annotation $reader, Registry $registry)
     {
