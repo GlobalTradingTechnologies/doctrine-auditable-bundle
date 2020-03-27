@@ -145,7 +145,7 @@ class GroupSuperClass
      */
     public function getEntityId(): string
     {
-        return $this->entityClass;
+        return $this->entityId;
     }
 
     /**
