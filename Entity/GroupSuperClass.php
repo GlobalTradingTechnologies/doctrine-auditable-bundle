@@ -139,7 +139,7 @@ class GroupSuperClass
      */
     public function getEntityId()
     {
-        return $this->entityClass;
+        return $this->entityId;
     }
 
     /**
