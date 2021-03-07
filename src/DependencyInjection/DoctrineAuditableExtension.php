@@ -14,7 +14,7 @@ namespace Gtt\Bundle\DoctrineAuditableBundle\DependencyInjection;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
-use Symfony\Component\DependencyInjection\Loader\XmlFileLoader;
+use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 
 /**
  * Bundle extension
@@ -24,15 +24,14 @@ class DoctrineAuditableExtension extends Extension
     /**
      * {@inheritdoc}
      */
-    public function load(array $config, ContainerBuilder $container): void
+    public function load(array $configs, ContainerBuilder $container): void
     {
-        $configuration = new Configuration();
-        $config        = $this->processConfiguration($configuration, $config);
+        $config = $this->processConfiguration($this->getConfiguration($configs, $container), $configs);
 
         $locator = new FileLocator(__DIR__ . '/../Resources/config');
-        $loader  = new XmlFileLoader($container, $locator);
+        $loader  = new PhpFileLoader($container, $locator);
 
-        $loader->load('services.xml');
+        $loader->load('services.php');
         $container->setParameter('gtt.doctrine_auditable.subscriber_class', $config['subscriber_class']);
     }
 }

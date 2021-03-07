@@ -11,6 +11,7 @@ declare(strict_types = 1);
 namespace Gtt\Bundle\DoctrineAuditableBundle\Log;
 
 use Doctrine\Bundle\DoctrineBundle as Doctrine;
+use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Gtt\Bundle\DoctrineAuditableBundle\Exception;
@@ -36,12 +37,9 @@ class Store
      *             ]
      *          ]
      */
-    private $store;
+    private array $store;
 
-    /**
-     * @var Doctrine\Registry
-     */
-    private $doctrineRegistry;
+    private Registry $doctrineRegistry;
 
     /**
      * Logger constructor.

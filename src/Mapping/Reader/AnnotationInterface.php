@@ -21,5 +21,5 @@ interface AnnotationInterface
      *
      * @return array Config
      */
-    public function read($class);
+    public function read(string $class): array;
 }

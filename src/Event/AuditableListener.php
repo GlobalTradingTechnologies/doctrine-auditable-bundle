@@ -10,12 +10,11 @@ declare(strict_types = 1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Event;
 
-use DateTime;
-use DateTimeInterface;
-use Doctrine\Common\EventSubscriber;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\DateTimeType;
+use Doctrine\DBAL\Types\DateTimeTzType;
 use Doctrine\DBAL\Types\Type;
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Gtt\Bundle\DoctrineAuditableBundle\Entity\Entry;
@@ -23,30 +22,28 @@ use Gtt\Bundle\DoctrineAuditableBundle\Entity\EntrySuperClass;
 use Gtt\Bundle\DoctrineAuditableBundle\Entity\Group;
 use Gtt\Bundle\DoctrineAuditableBundle\Entity\GroupSuperClass;
 use Gtt\Bundle\DoctrineAuditableBundle\Exception\InvalidMappingException;
-use Gtt\Bundle\DoctrineAuditableBundle\Log;
+use Gtt\Bundle\DoctrineAuditableBundle\Log\Store;
 use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\AnnotationInterface;
-use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use function
-    array_intersect,
-    array_key_exists,
-    array_keys,
-    array_merge_recursive,
-    array_reverse,
-    array_shift,
-    array_values,
-    count,
-    get_class,
-    is_string,
-    method_exists,
-    str_replace,
-    spl_object_hash
-;
+
+use function array_intersect;
+use function array_key_exists;
+use function array_keys;
+use function array_merge_recursive;
+use function array_reverse;
+use function array_shift;
+use function array_values;
+use function count;
+use function get_class;
+use function is_string;
+use function method_exists;
+use function spl_object_hash;
+use function str_replace;
 
 /**
  * Auditable subscriber
  */
-class AuditableSubscriber implements EventSubscriber
+class AuditableListener
 {
     /**
      * Datetime with timezone format (ISO 8601)
@@ -55,83 +52,45 @@ class AuditableSubscriber implements EventSubscriber
 
     /**
      * Token storage
-     *
-     * @var TokenStorageInterface|null
      */
-    protected $tokenStorage;
+    protected ?TokenStorageInterface $tokenStorage;
 
     /**
      * Annotation reader
-     *
-     * @var AnnotationInterface
      */
-    protected $reader;
+    protected AnnotationInterface $reader;
 
     /**
      * Entity manager
-     *
-     * @var EntityManager
      */
-    protected $entityManager;
+    protected EntityManagerInterface $entityManager;
 
     /**
      * Classes meta-configs
-     *
-     * @var array
      */
-    private $configs = [];
+    private array $configs = [];
 
-    /**
-     * Should we use immutable dates?
-     *
-     * @var bool
-     */
-    private $shouldUseImmutableDates = null;
-
-    /**
-     * @var Log\Store|null
-     */
-    private $store;
+    protected Store $store;
 
     /**
      * Store of change log of entity
      *
      * @var array
      */
-    private $logStore = [];
+    private array $logStore = [];
 
     /**
      * AuditableListener constructor.
      *
+     * @param Store                      $store        Auditable store
      * @param TokenStorageInterface|null $tokenStorage Token storage
      * @param AnnotationInterface        $reader       Annotation reader
      */
-    public function __construct(?TokenStorageInterface $tokenStorage, AnnotationInterface $reader)
+    public function __construct(Store $store, ?TokenStorageInterface $tokenStorage, AnnotationInterface $reader)
     {
+        $this->store        = $store;
         $this->reader       = $reader;
         $this->tokenStorage = $tokenStorage;
-    }
-
-    /**
-     * Injects auditable logger dependency
-     *
-     * @param Log\Store $store Auditable logger
-     *
-     * @internal
-     *
-     * @deprecated this DI method will be switched to constructor-injection method in next major version.
-     */
-    public function setStore(Log\Store $store): void
-    {
-        $this->store = $store;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSubscribedEvents()
-    {
-        return ['onFlush'];
     }
 
     /**
@@ -188,12 +147,6 @@ class AuditableSubscriber implements EventSubscriber
 
         if (count($affectedAuditableColumns) > 0 || count($affectedAuditableAssociations) > 0) {
             $comment = null;
-            if (isset($config['commentProperty'])) {
-                $accessor = PropertyAccess::createPropertyAccessor();
-                $comment  = $accessor->getValue($entity, $config['commentProperty']);
-                $accessor->setValue($entity, $config['commentProperty'], null);
-            }
-
             if ($this->store !== null) {
                 $entityHash  = spl_object_hash($entity);
                 if (array_key_exists($entityHash, $this->logStore)) {
@@ -202,9 +155,8 @@ class AuditableSubscriber implements EventSubscriber
                 }
             }
 
-            /** @var Group $group */
             $group = $this->createGroup(
-                new DateTime(),
+                new DateTimeImmutable(),
                 $this->getUsername(),
                 $meta->name,
                 $this->readEntityId($entity),
@@ -224,10 +176,9 @@ class AuditableSubscriber implements EventSubscriber
                     $type = Type::getType($type);
                 }
 
-                $valueBefore = $columnsChangeSet[$column][0];
-                $valueAfter  = $columnsChangeSet[$column][1];
+                [$valueBefore, $valueAfter] = $columnsChangeSet[$column];
 
-                if ($type instanceof DateTimeType) {
+                if ($type instanceof DateTimeType || $type instanceof DateTimeTzType) {
                     $valueBefore = $valueBefore === null ? null : $valueBefore->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
                     $valueAfter  = $valueBefore === null ? null : $valueAfter->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
                 } elseif ($type instanceof Type) {
@@ -239,7 +190,6 @@ class AuditableSubscriber implements EventSubscriber
                 $valueBefore = $valueBefore === null ? null : (string) $valueBefore;
                 $valueAfter  = $valueAfter === null ? null : (string) $valueAfter;
 
-                /** @var Entry $entry */
                 $entry = $this->createEntry($group, $column, false, $valueBefore, $valueAfter);
                 $this->entityManager->persist($entry);
 
@@ -248,16 +198,21 @@ class AuditableSubscriber implements EventSubscriber
             }
 
             foreach ($affectedAuditableAssociations as $association) {
-                $before       = $toOneChangeSet[$association][0];
-                $after        = $toOneChangeSet[$association][1];
+                [$before, $after] = $toOneChangeSet[$association];
+
                 $valueBefore  = $this->readEntityId($before);
                 $valueAfter   = $this->readEntityId($after);
                 $stringBefore = $this->getEntityStringRepresentation($before);
                 $stringAfter  = $this->getEntityStringRepresentation($after);
 
-                /** @var Entry $entry */
                 $entry = $this->createEntry(
-                    $group, $association, true, $valueBefore, $valueAfter, $stringBefore, $stringAfter
+                    $group,
+                    $association,
+                    true,
+                    $valueBefore,
+                    $valueAfter,
+                    $stringBefore,
+                    $stringAfter
                 );
                 $this->entityManager->persist($entry);
 
@@ -275,7 +230,7 @@ class AuditableSubscriber implements EventSubscriber
      *
      * @return array
      */
-    protected function getColumnsChangeSet(ClassMetadataInfo $meta, array $changeSet)
+    protected function getColumnsChangeSet(ClassMetadataInfo $meta, array $changeSet): array
     {
         $filtered = [];
 
@@ -296,7 +251,7 @@ class AuditableSubscriber implements EventSubscriber
      *
      * @return array
      */
-    protected function getToOneChangeSet(ClassMetadataInfo $meta, array $changeSet)
+    protected function getToOneChangeSet(ClassMetadataInfo $meta, array $changeSet): array
     {
         $filtered = [];
 
@@ -319,7 +274,7 @@ class AuditableSubscriber implements EventSubscriber
      *
      * @return null|string
      */
-    protected function getEntityStringRepresentation($entity)
+    protected function getEntityStringRepresentation(object $entity): ?string
     {
         if (method_exists($entity, '__toString')) {
             return (string) $entity;
@@ -350,7 +305,7 @@ class AuditableSubscriber implements EventSubscriber
     /**
      * Create group instance
      *
-     * @param DateTimeInterface $createdTs   Crated timestamp
+     * @param DateTimeImmutable $createdTs   Crated timestamp
      * @param string|null       $username    Username
      * @param string            $entityClass Entity class name
      * @param string            $entityId    Entity ID
@@ -359,32 +314,12 @@ class AuditableSubscriber implements EventSubscriber
      * @return Group
      */
     protected function createGroup(
-        DateTimeInterface $createdTs,
+        DateTimeImmutable $createdTs,
         ?string $username,
         string $entityClass,
         string $entityId,
         ?string $comment
     ): GroupSuperClass {
-        if ($this->shouldUseImmutableDates === null) {
-            $meta = $this->entityManager->getClassMetadata(Group::class);
-
-            $dateField = $meta->getTypeOfField('createdTs');
-            if ($dateField instanceof Type) {
-                $dateField = $dateField->getName();
-            }
-
-            $this->shouldUseImmutableDates = $dateField !== null
-                && \in_array(
-                    $dateField,
-                    [Type::DATE_IMMUTABLE, Type::DATETIME_IMMUTABLE, Type::DATETIMETZ_IMMUTABLE],
-                    true
-                );
-        }
-
-        if ($this->shouldUseImmutableDates && $createdTs instanceof \DateTime) {
-            $createdTs = \DateTimeImmutable::createFromMutable($createdTs);
-        }
-
         return new Group($createdTs, $username, $entityClass, $entityId, $comment);
     }
 
@@ -499,23 +434,7 @@ class AuditableSubscriber implements EventSubscriber
             $configurationToMergeMap[$parentClass] = $this->reader->read($parentClass);
         }
 
-        // 3. Validate configuration inheritance
-        $isParentConfigured = false;
-        foreach ($configurationToMergeMap as $className => $classConfiguration) {
-            if (!$isParentConfigured) {
-                $isParentConfigured = !empty($configurationToMergeMap);  // stands that for current class `Entity` annotation exists
-                continue;
-            }
-
-            if ($isParentConfigured && isset($configurationToMergeMap['commentProperty'])) {  // check for child class only
-                throw new InvalidMappingException(
-                    "Cannot set `commentProperty` for Entity annotation in $className. " .
-                    'It may be set only for `Entity` annotation in eldest parent class.'
-                );
-            }
-        }
-
-        // 4. Build final class configuration: perform configuration inheritance
+        // 3. Build final class configuration: perform configuration inheritance
         $configurationToMergeList = array_values($configurationToMergeMap);
         return array_merge_recursive(...$configurationToMergeList);
     }

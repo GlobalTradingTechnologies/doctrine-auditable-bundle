@@ -37,13 +37,13 @@ class Entry extends EntrySuperClass
      * @ORM\ManyToOne(targetEntity="Group")
      * @ORM\JoinColumn(name="group_id", referencedColumnName="id")
      */
-    protected $group;
+    protected Group $group;
 
     /**
      * {@inheritdoc}
      */
     public function __construct(
-        GroupSuperClass $group,
+        Group $group,
         string $entityColumn,
         bool $association,
         ?string $valueBefore,

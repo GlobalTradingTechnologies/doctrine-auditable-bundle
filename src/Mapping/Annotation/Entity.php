@@ -11,8 +11,7 @@ declare(strict_types = 1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation;
 
-use Doctrine\Common\Annotations\Annotation;
-use Gtt\Bundle\DoctrineAuditableBundle\Log\Store;
+use Attribute;
 
 /**
  * Annotation for auditable entity
@@ -20,20 +19,9 @@ use Gtt\Bundle\DoctrineAuditableBundle\Log\Store;
  * @Annotation
  * @Target("CLASS")
  *
- * @deprecated This property forces your application domain entity know about this bundle,
- *             (it's application layer violation). Please consider to avoid using this API
- *             in favor for {@see Store} API.
- *
  * @author Pavel.Levin
  */
-final class Entity extends Annotation
+#[Attribute(Attribute::TARGET_CLASS)]
+final class Entity
 {
-    /**
-     * Property with comment for changeSet
-     *
-     * @deprecated see class \@depracated description
-     *
-     * @var string
-     */
-    public $commentProperty;
 }

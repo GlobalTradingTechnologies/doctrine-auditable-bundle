@@ -36,7 +36,7 @@ class EntrySuperClass
      *
      * @ORM\Column(name="entity_column", type="string", length=255)
      */
-    protected $entityColumn;
+    protected string $entityColumn;
 
     /**
      * Column represents association
@@ -45,43 +45,35 @@ class EntrySuperClass
      *
      * @ORM\Column(name="is_association", type="boolean")
      */
-    protected $association = false;
+    protected bool $association = false;
 
     /**
      * Value before
      *
-     * @var mixed
-     *
-     * @ORM\Column(name="value_before", type="string", length=255)
+     * @ORM\Column(name="value_before", type="string", length=255, nullable=true)
      */
-    protected $valueBefore;
+    protected ?string $valueBefore;
 
     /**
      * Value after
      *
-     * @var mixed
-     *
-     * @ORM\Column(name="value_after", type="string", length=255)
+     * @ORM\Column(name="value_after", type="string", length=255, nullable=true)
      */
-    protected $valueAfter;
+    protected ?string $valueAfter;
 
     /**
      * Related entity string representation before update (if possible)
      *
-     * @var string
-     *
-     * @ORM\Column(name="related_string_before", type="string", length=255)
+     * @ORM\Column(name="related_string_before", type="string", length=255, nullable=true)
      */
-    protected $relatedStringBefore;
+    protected ?string $relatedStringBefore;
 
     /**
      * Related entity string representation after update (if possible)
      *
-     * @var string
-     *
-     * @ORM\Column(name="related_string_after", type="string", length=255)
+     * @ORM\Column(name="related_string_after", type="string", length=255, nullable=true)
      */
-    protected $relatedStringAfter;
+    protected ?string $relatedStringAfter;
 
     /**
      * Entry constructor.

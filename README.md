@@ -20,7 +20,7 @@ Installation
 composer require "gtt/doctrine-auditable-bundle"
 ```
 
-2. Add to AppKernel.php
+2. Add to Kernel.php
 ```php
 public function registerBundles()
 {
@@ -33,12 +33,13 @@ public function registerBundles()
 ```
 3. Create tables for changes storing
 ```
-app/console doctrine:schema:update --force
+bin/console doctrine:schema:update --force
 ```
 4. Configure mapping if needed.
 
 Usage
-===
+=====
+
 Add annotation for tracking property
 ```php
 <?php
@@ -69,41 +70,33 @@ class Entity
     ...
 }
 ```
+In php 8 you can use attributes instead of annotations.
 
-If you need comment changes then add property for comment and add annotation attribute to the entity
+Then somewhere in a service change an entity property and flush the changes.
 ```php
-/**
- * My entity
- *
- * @ORM\Entity
- * @ORM\Table(name="entity")
- *
- * @Auditable\Entity(commentProperty="comment")
- */
-class Entity
-{
-    ...
-    private $comment;
-    ...
-    
-    public function setComment($comment)
-    {
-        $this->comment = $comment;
-        return $this;
-    }
+<?php
 
-    public function getComment()
+use Doctrine\ORM\EntityManagerInterface;
+use Gtt\Bundle\DoctrineAuditableBundle as Auditable;
+
+class PayloadService {
+    private Auditable\Log\Store $auditable;
+    
+    private EntityManagerInterface $entityManager;
+
+    /**
+     * Operate!
+     */
+    public function payloadMethod(YourDomain\Entity $entity): void 
     {
-        return $this->comment;
+        // 1. change some property that supposed to be logged to changelog
+        $entity->updateProperty();  // ... just dummy example
+        
+        // 2. describe this change
+        $this->auditable->describe($entity, 'Change description');
+      
+        // 3. perform update 
+        $this->entityManager->flush();
     }
 }
-```
-
-Set you comment
-```php
-...
-$entity->setName('Any name');
-$entity->setComment('Set any name to the entity');
-$entityManager->flush();
-...
 ```

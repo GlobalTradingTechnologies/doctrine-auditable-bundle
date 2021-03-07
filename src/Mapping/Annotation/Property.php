@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation;
 
-use Doctrine\Common\Annotations\Annotation;
+use Attribute;
 
 /**
  * Annotation for auditable entity
@@ -17,6 +17,7 @@ use Doctrine\Common\Annotations\Annotation;
  * @Annotation
  * @Target("PROPERTY")
  */
-final class Property extends Annotation
+#[Attribute(Attribute::TARGET_PROPERTY)]
+final class Property
 {
 }

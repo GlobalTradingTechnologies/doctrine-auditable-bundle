@@ -1,6 +1,8 @@
 <?php
+
 declare(strict_types=1);
-/**
+
+/*
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
  * For the full copyright and license information, please view the LICENSE
@@ -15,6 +17,12 @@ use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Gtt\Bundle\DoctrineAuditableBundle\Exception\InvalidMappingException;
 use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation\Entity;
 use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation\Property;
+use LogicException;
+use ReflectionClass;
+use ReflectionProperty;
+
+use function count;
+use function is_array;
 
 /**
  * This is an annotation mapping driver for Auditable behavioral extension.
@@ -24,17 +32,13 @@ class Annotation implements AnnotationInterface
 {
     /**
      * Annotation reader instance
-     *
-     * @var Reader
      */
-    private $reader;
+    private Reader $reader;
 
     /**
      * Entity managers registry
-     *
-     * @var Registry
      */
-    protected $registry;
+    private Registry $registry;
 
     /**
      * Annotation constructor.
@@ -51,30 +55,24 @@ class Annotation implements AnnotationInterface
     /**
      *{@inheritdoc}
      */
-    public function read($class)
+    public function read(string $class): array
     {
         $entityManager = $this->registry->getManagerForClass($class);
         if (null === $entityManager) {
-            throw new \LogicException("Class `$class` has no object manager");
+            throw new LogicException("Class `$class` has no object manager");
         }
         $metadataFactory = $entityManager->getMetadataFactory();
-        /** @var ClassMetadataInfo $meta */
         $meta            = $metadataFactory->getMetadataFor($class);
-        $reflectionClass = $meta->getReflectionClass();
 
+        assert($meta instanceof ClassMetadataInfo);
+        $reflectionClass = $meta->getReflectionClass();
         // Analyze class annotation
-        if (null === $classAnnotation = $this->reader->getClassAnnotation($reflectionClass, Entity::class)) {
+        if (!$this->hasClassAnnotation($reflectionClass, Entity::class)) {
             return [];
         }
 
-        /** config properties: columns (string[]), commentProperty (string),  */
+        /** config properties: columns (string[]),  */
         $config = ['columns' => []];
-        if (null !== $commentProperty = $classAnnotation->commentProperty) {
-            if (!$reflectionClass->hasProperty($commentProperty)) {
-                throw new InvalidMappingException("Comment property '$commentProperty' does not exist.");
-            }
-            $config['commentProperty'] = $commentProperty;
-        }
 
         // Analyze property annotations
         foreach ($reflectionClass->getProperties() as $property) {
@@ -83,7 +81,7 @@ class Annotation implements AnnotationInterface
             }
 
             // Auditable property
-            if ($this->reader->getPropertyAnnotation($property, Property::class)) {
+            if ($this->hasPropertyAnnotation($property, Property::class)) {
                 $field = $property->getName();
 
                 if (isset($meta->embeddedClasses[$field])) {
@@ -98,11 +96,44 @@ class Annotation implements AnnotationInterface
         }
 
         if (!$meta->isMappedSuperclass && $config) {
-            if (\is_array($meta->identifier) && \count($meta->identifier) > 1) {
-                throw new InvalidMappingException("Composite identifiers does not support, {$meta->name}");
+            if (is_array($meta->identifier) && count($meta->identifier) > 1) {
+                throw new InvalidMappingException("Composite identifiers are not supported, found in class \"{$meta->name}\"");
             }
         }
 
         return $config;
+    }
+
+    private function hasClassAnnotation(ReflectionClass $class, string $annotation): bool
+    {
+        if ($this->hasPhp80Attribute($class, $annotation)) {
+            return true;
+        }
+
+        return $this->reader->getClassAnnotation($class, $annotation) !== null;
+    }
+
+    private function hasPropertyAnnotation(ReflectionProperty $property, string $annotation): bool
+    {
+        if ($this->hasPhp80Attribute($property, $annotation)) {
+            return true;
+        }
+
+        return $this->reader->getPropertyAnnotation($property, $annotation) !== null;
+    }
+
+    /**
+     * @param ReflectionClass|ReflectionProperty $reflection
+     * @param class-string                        $annotation
+     */
+    private function hasPhp80Attribute($reflection, string $annotation): bool
+    {
+        if (PHP_VERSION_ID < 80000) {
+            return false;
+        }
+
+        $attributes = $reflection->getAttributes($annotation);
+
+        return !empty($attributes);
     }
 }

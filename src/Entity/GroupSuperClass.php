@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Entity;
 
-use DateTimeInterface;
+use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -28,25 +28,21 @@ class GroupSuperClass
      * @ORM\Column(type="integer")
      * @ORM\GeneratedValue(strategy="AUTO")
      */
-    protected $id;
+    protected int $id;
 
     /**
      * Date (time when change was registered in the system)
      *
-     * @var DateTimeInterface
-     *
-     * @ORM\Column(type="datetime", name="created_ts", columnDefinition="TIMESTAMP NULL DEFAULT NULL")
+     * @ORM\Column(type="datetime_immutable", name="created_ts", columnDefinition="TIMESTAMP NULL DEFAULT NULL")
      */
-    protected $createdTs;
+    protected DateTimeImmutable $createdTs;
 
     /**
      * Username
      *
-     * @var string
-     *
-     * @ORM\Column(type="string", name="username")
+     * @ORM\Column(type="string", name="username", nullable=true)
      */
-    protected $username;
+    protected ?string $username;
 
     /**
      * Entity class name
@@ -55,7 +51,7 @@ class GroupSuperClass
      *
      * @ORM\Column(name="entity_class", type="string", length=255)
      */
-    protected $entityClass;
+    protected string $entityClass;
 
     /**
      * Entity ID
@@ -64,38 +60,38 @@ class GroupSuperClass
      *
      * @ORM\Column(name="entity_id", type="string", length=255)
      */
-    protected $entityId;
+    protected string $entityId;
 
     /**
      * ChangeSet comment
      *
      * @var string
      *
-     * @ORM\Column(type="text")
+     * @ORM\Column(type="text", nullable=true)
      */
-    protected $comment;
+    protected ?string $comment;
 
     /**
      * Group constructor.
      *
-     * @param DateTimeInterface $createdTs   Crated timestamp
+     * @param DateTimeImmutable $createdTs   Crated timestamp
      * @param string|null       $username    User name
      * @param string            $entityClass Entity class name
      * @param string            $entityId    Entity ID
      * @param string|null       $comment     ChangeSet comment
      */
     public function __construct(
-        DateTimeInterface $createdTs,
+        DateTimeImmutable $createdTs,
         ?string $username,
         string $entityClass,
         string $entityId,
         ?string $comment
     ) {
-        $this->createdTs = $createdTs;
-        $this->username = $username;
+        $this->createdTs   = $createdTs;
+        $this->username    = $username;
         $this->entityClass = $entityClass;
-        $this->entityId = $entityId;
-        $this->comment = $comment;
+        $this->entityId    = $entityId;
+        $this->comment     = $comment;
     }
 
     /**
@@ -110,10 +106,8 @@ class GroupSuperClass
 
     /**
      * Get created timestamp
-     *
-     * @return DateTimeInterface
      */
-    public function getCreatedTs(): DateTimeInterface
+    public function getCreatedTs(): DateTimeImmutable
     {
         return $this->createdTs;
     }
