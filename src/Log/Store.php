@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
@@ -6,7 +7,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Log;
 
@@ -16,7 +17,10 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Gtt\Bundle\DoctrineAuditableBundle\Exception;
 use ProxyManager\Proxy\ValueHolderInterface;
-use function array_key_exists, get_class, spl_object_hash;
+
+use function array_key_exists;
+use function get_class;
+use function spl_object_hash;
 
 /**
  * Collects entities changes' description to be saved as changelog description for managed entities by auditable

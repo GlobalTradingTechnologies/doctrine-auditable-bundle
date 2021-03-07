@@ -7,14 +7,16 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\DependencyInjection;
 
 use Gtt\Bundle\DoctrineAuditableBundle\Event\AuditableListener;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+
 use function is_subclass_of;
+use function method_exists;
 
 /**
  * Defines bundle configuration structure
@@ -27,7 +29,7 @@ final class Configuration implements ConfigurationInterface
     public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('doctrine_auditable');
-        $rootNode    = \method_exists($treeBuilder, 'getRootNode')
+        $rootNode    = method_exists($treeBuilder, 'getRootNode')
             ? $treeBuilder->getRootNode()
             : $treeBuilder->root('doctrine_auditable');
 
