@@ -9,8 +9,9 @@ declare(strict_types=1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Entity;
 
-use DateTimeInterface;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -33,17 +34,17 @@ class Group extends GroupSuperClass
     /**
      * Group entries
      *
-     * @var Entry[]|ArrayCollection
+     * @var Collection<Entry>
      *
      * @ORM\OneToMany(targetEntity="Entry", mappedBy="group")
      */
-    private $entries;
+    private Collection $entries;
 
     /**
      * {@inheritdoc}
      */
     public function __construct(
-        DateTimeInterface $createdTs,
+        DateTimeImmutable $createdTs,
         ?string $username,
         string $entityClass,
         string $entityId,

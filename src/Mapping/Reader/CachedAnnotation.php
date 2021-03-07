@@ -21,29 +21,25 @@ class CachedAnnotation implements AnnotationInterface
      *
      * @var array
      */
-    protected $configs;
+    protected array $configs = [];
 
     /**
      * Annotation reader instance
-     *
-     * @var Annotation
      */
-    protected $reader;
+    protected AnnotationInterface $reader;
 
     /**
      * Entity managers registry
-     *
-     * @var Registry
      */
-    protected $registry;
+    protected Registry $registry;
 
     /**
      * Annotation constructor.
      *
-     * @param Annotation $reader   Annotation reader
-     * @param Registry   $registry Entity managers registry
+     * @param AnnotationInterface $reader   Annotation reader
+     * @param Registry            $registry Entity managers registry
      */
-    public function __construct(Annotation $reader, Registry $registry)
+    public function __construct(AnnotationInterface $reader, Registry $registry)
     {
         $this->reader   = $reader;
         $this->registry = $registry;
@@ -52,7 +48,7 @@ class CachedAnnotation implements AnnotationInterface
     /**
      * {@inheritdoc}
      */
-    public function read($class)
+    public function read(string $class): array
     {
         if (isset($this->configs[$class])) {
             return $this->configs[$class];

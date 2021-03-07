@@ -1,12 +1,13 @@
 <?php
-/**
+
+declare(strict_types=1);
+
+/*
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-
-declare(strict_types = 1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Log;
 
@@ -91,8 +92,8 @@ final class StoreTest extends TestCase
 
         $entityHash = spl_object_hash($entity);
 
-        $this->assertArrayHasKey($entityHash, $logStack);
-        $this->assertEquals($logStack[$entityHash], $comment);
+        self::assertArrayHasKey($entityHash, $logStack);
+        self::assertEquals($logStack[$entityHash], $comment);
     }
 
     /**
@@ -116,6 +117,6 @@ final class StoreTest extends TestCase
         $store->describe(new Stub\Entity(), 'whatever');
         $store->onFlush($onFlushEventArgs);
 
-        $this->assertEmpty($store->pop($entityManager));
+        self::assertEmpty($store->pop($entityManager));
     }
 }

@@ -11,7 +11,7 @@ declare(strict_types = 1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\DependencyInjection;
 
-use Gtt\Bundle\DoctrineAuditableBundle\Event\AuditableSubscriber;
+use Gtt\Bundle\DoctrineAuditableBundle\Event\AuditableListener;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use function is_subclass_of;
@@ -32,7 +32,7 @@ final class Configuration implements ConfigurationInterface
             : $treeBuilder->root('doctrine_auditable');
 
         $isWrongAbstraction = static function (string $subscriberClass): bool {
-            return !is_subclass_of($subscriberClass, AuditableSubscriber::class);
+            return !is_subclass_of($subscriberClass, AuditableListener::class);
         };
 
         $rootNode
@@ -41,9 +41,9 @@ final class Configuration implements ConfigurationInterface
                     ->info('Subscriber class used to handle event to create auditable data')
                     ->validate()
                         ->ifTrue($isWrongAbstraction)
-                        ->thenInvalid('%s class must override "' . AuditableSubscriber::class . '"')
+                        ->thenInvalid('%s class must override "' . AuditableListener::class . '"')
                     ->end()
-                    ->defaultValue(AuditableSubscriber::class)
+                    ->defaultValue(AuditableListener::class)
                     ->cannotBeEmpty()
                 ->end()
             ->end();
