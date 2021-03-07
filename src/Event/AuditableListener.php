@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of the Global Trading Technologies Ltd doctrine-auditable-bundle package.
  *
@@ -6,7 +7,7 @@
  * file that was distributed with this source code.
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Event;
 
