@@ -109,20 +109,44 @@ final class AuditTest extends KernelTestCase
         $store->describe($order, 'Total items change test');
         $this->em->flush();
 
-        $entries = $this->em
-            ->createQueryBuilder()
-            ->select('e')
-            ->from(Entry::class, 'e')
-            ->join('e.group', 'g')
-            ->where('g.entityClass = :class AND g.entityId = :id')
-            ->setParameter('class', Order::class)
-            ->setParameter('id', $order->getId())
-            ->getQuery()
-            ->getResult();
+        $entries = $this->getOrderChangesById($order->getId());
 
         self::assertCount(1, $entries);
+
         self::assertSame($oldDate->format('c'), $entries[0]->getValueBefore());
         self::assertSame($newDate->format('c'), $entries[0]->getValueAfter());
+    }
+
+    public function testNullableDateInValueBefore(): void {
+        $order = new Order('test', 1);
+        $order->setExecutedTs(null);
+
+        $this->em->persist($order);
+        $this->em->flush();
+
+        $order->setExecutedTs(new \DateTimeImmutable('2020-01-02T03:00:00+00:00'));
+        $this->em->flush();
+
+        $entries = $this->getOrderChangesById($order->getId());
+
+        self::assertNull($entries[0]->getValueBefore());
+        self::assertSame('2020-01-02T03:00:00+00:00', $entries[0]->getValueAfter());
+    }
+
+    public function testNullableDateInValueAfter(): void {
+        $order = new Order('test', 1);
+        $order->setExecutedTs(new \DateTimeImmutable('2020-01-02T03:00:00+00:00'));
+
+        $this->em->persist($order);
+        $this->em->flush();
+
+        $order->setExecutedTs(null);
+        $this->em->flush();
+
+        $entries = $this->getOrderChangesById($order->getId());
+
+        self::assertSame('2020-01-02T03:00:00+00:00', $entries[0]->getValueBefore());
+        self::assertNull($entries[0]->getValueAfter());
     }
 
     public static function orderDateTimeProvider(): iterable
@@ -132,5 +156,19 @@ final class AuditTest extends KernelTestCase
 
         $order = new Order('test', 2);
         yield [$order, new DateTimeImmutable('2020-04-08 12:14:17'), new DateTimeImmutable('2021-04-08 12:14:17'), [$order, 'setExecutedTs']];
+    }
+
+    private function getOrderChangesById(int $id): array
+    {
+        return $this->em
+            ->createQueryBuilder()
+            ->select('e')
+            ->from(Entry::class, 'e')
+            ->join('e.group', 'g')
+            ->where('g.entityClass = :class AND g.entityId = :id')
+            ->setParameter('class', Order::class)
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getResult();
     }
 }
