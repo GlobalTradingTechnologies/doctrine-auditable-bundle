@@ -165,14 +165,14 @@ class AuditableListener implements EventSubscriber
 
                     if ($type instanceof DateTimeType) {
                         $valueBefore = is_null($valueBefore) ? null : $valueBefore->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
-                        $valueAfter  = is_null($valueBefore) ? null : $valueAfter->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
+                        $valueAfter  = is_null($valueAfter) ? null : $valueAfter->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
                     } elseif ($type instanceof Type) {
                         $platform    = $this->entityManager->getConnection()->getDatabasePlatform();
                         $valueBefore = $type->convertToDatabaseValue($valueBefore, $platform);
                         $valueAfter  = $type->convertToDatabaseValue($valueAfter, $platform);
                     } else {
                         $valueBefore = is_null($valueBefore) ? null : (string) $valueBefore;
-                        $valueAfter  = is_null($valueBefore) ? null : (string) $valueBefore;
+                        $valueAfter  = is_null($valueAfter) ? null : (string) $valueAfter;
                     }
 
                     /** @var Entry $entry */
