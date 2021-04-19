@@ -181,7 +181,7 @@ class AuditableListener
 
                 if ($type instanceof DateTimeType || $type instanceof DateTimeTzType) {
                     $valueBefore = $valueBefore === null ? null : $valueBefore->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
-                    $valueAfter  = $valueBefore === null ? null : $valueAfter->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
+                    $valueAfter  = $valueAfter === null ? null : $valueAfter->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
                 } elseif ($type instanceof Type) {
                     $platform    = $this->entityManager->getConnection()->getDatabasePlatform();
                     $valueBefore = $type->convertToDatabaseValue($valueBefore, $platform);
