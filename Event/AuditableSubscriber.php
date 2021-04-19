@@ -175,7 +175,7 @@ class AuditableSubscriber implements EventSubscriber
                     $valueAfter  = $type->convertToDatabaseValue($valueAfter, $platform);
                 } else {
                     $valueBefore = is_null($valueBefore) ? null : (string) $valueBefore;
-                    $valueAfter  = is_null($valueBefore) ? null : (string) $valueBefore;
+                    $valueAfter  = is_null($valueAfter) ? null : (string) $valueAfter;
                 }
 
                 /** @var Entry $entry */
