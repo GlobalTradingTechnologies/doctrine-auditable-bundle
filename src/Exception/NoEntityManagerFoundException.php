@@ -16,6 +16,6 @@ use LogicException;
 /**
  * Thrown when no related entity manager was found for entity
  */
-class NoEntityManagerFoundException extends LogicException implements DoctrineAuditableExceptionInterface
+final class NoEntityManagerFoundException extends LogicException implements DoctrineAuditableExceptionInterface
 {
 }

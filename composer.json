@@ -1,7 +1,8 @@
 {
     "name": "gtt/doctrine-auditable-bundle",
-    "type": "symfony-bundle",
     "description": "Doctrine auditable bundle is alternative for DoctrineExtensions Loggable",
+    "license": "MIT",
+    "type": "symfony-bundle",
     "keywords": [
         "gtt",
         "symfony",
@@ -10,32 +11,25 @@
         "loggable",
         "bundle"
     ],
-    "license": "MIT",
     "require": {
-        "php": "~7.4 || ~8.0",
+        "php": "~8.0",
         "doctrine/doctrine-bundle": "~2.0",
-        "doctrine/orm": "~2.3",
-        "symfony/config": "~3.4 || ~4.0 || ~5.0",
-        "symfony/dependency-injection": "~3.4 || ~4.0 || ~5.0",
-        "symfony/http-kernel": "~3.4 || ~4.0 || ~5.0",
-        "symfony/property-access": "~3.4 || ~4.0 || ~5.0"
+        "doctrine/orm": "~2.10",
+        "symfony/config": "~5.4 || ~6.0",
+        "symfony/dependency-injection": "~5.4 || ~6.0",
+        "symfony/http-kernel": "~5.4 || ~6.0",
+        "symfony/property-access": "~5.4 || ~6.0"
     },
     "require-dev": {
-        "ocramius/proxy-manager": "~2.2",
-        "phpunit/phpunit": "^9",
-        "symfony/security-core": "~3.4 || ~4.0 || ~5.0",
-        "symfony/framework-bundle": "~3.4 || ~4.0 || ~5.0"
+        "mikey179/vfsstream": "^1.6.10",
+        "phpunit/phpunit": "^9.5",
+        "symfony/framework-bundle": "~5.4 || ~6.0",
+        "symfony/phpunit-bridge": "^6.0",
+        "symfony/proxy-manager-bridge": "~5.4 || ~6.0",
+        "symfony/security-bundle": "~5.4 || ~6.0"
     },
     "suggest": {
         "symfony/security-core": "For logging user made change"
-    },
-    "config": {
-        "sort-packages": true
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "4.x-dev"
-        }
     },
     "autoload": {
         "psr-4": {
@@ -45,6 +39,17 @@
     "autoload-dev": {
         "psr-4": {
             "Gtt\\Bundle\\DoctrineAuditableBundle\\": "tests"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true
+        },
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "4.x-dev"
         }
     }
 }

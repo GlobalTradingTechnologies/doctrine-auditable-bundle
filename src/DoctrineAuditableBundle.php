@@ -16,6 +16,6 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
 /**
  * Bundle class
  */
-class DoctrineAuditableBundle extends Bundle
+final class DoctrineAuditableBundle extends Bundle
 {
 }

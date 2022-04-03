@@ -18,32 +18,76 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Gtt\Bundle\DoctrineAuditableBundle\Acceptance\App\Entity\Order;
 use Gtt\Bundle\DoctrineAuditableBundle\Acceptance\App\TestKernel;
+use Gtt\Bundle\DoctrineAuditableBundle\CacheWarmer\AuditableMetadataWarmer;
 use Gtt\Bundle\DoctrineAuditableBundle\Entity\Entry;
 use Gtt\Bundle\DoctrineAuditableBundle\Entity\Group;
 use Gtt\Bundle\DoctrineAuditableBundle\Log\Store;
+use org\bovigo\vfs\vfsStream;
+use org\bovigo\vfs\vfsStreamDirectory;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Security\Core\Authentication\Token\PreAuthenticatedToken;
+use Symfony\Component\Security\Core\User\InMemoryUser;
 
 /**
  * Class AuditTest
  */
 final class AuditTest extends KernelTestCase
 {
+    private const MOCK_USER_NAME = 'das author!';
+
     private EntityManagerInterface $em;
+
+    private vfsStreamDirectory $projectRoot;
 
     protected static function getKernelClass(): string
     {
         return TestKernel::class;
     }
 
+    protected static function createKernel(array $options = []): KernelInterface
+    {
+        $kernel = parent::createKernel($options);
+        if (isset($options['cache_dir'])) {
+            \assert($kernel instanceof TestKernel);
+            $kernel->mockMethod('getCacheDir', static fn (): string => $options['cache_dir']);
+        }
+
+        $kernel->setCompilerPass(static function (ContainerBuilder $container): void {
+            $container->getDefinition('doctrine.orm.default_entity_manager')
+                ->setLazy(true);
+        });
+
+        return $kernel;
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
-        self::bootKernel();
+        $this->projectRoot = vfsStream::setup('app', 0755, [
+            'config' => [
+                'packages' => [],
+            ],
+            'var'    => [
+                'cache' => [],
+            ],
+        ]);
 
-        $this->em = self::$container->get('doctrine.orm.default_entity_manager');
+        $cacheDir = $this->projectRoot->url() . '/var/cache';
+        self::bootKernel(['cache_dir' => $cacheDir]);
+
+        $this->em = self::getContainer()->get('doctrine.orm.default_entity_manager');
 
         $schemaTool = new SchemaTool($this->em);
         $schemaTool->updateSchema($this->em->getMetadataFactory()->getAllMetadata());
+
+        self::getContainer()->get('security.token_storage')
+            ->setToken(new PreAuthenticatedToken(new InMemoryUser(self::MOCK_USER_NAME, ''), 'main'));
+
+        $warmer = self::getContainer()->get(AuditableMetadataWarmer::class);
+        \assert($warmer instanceof AuditableMetadataWarmer);
+        $warmer->warmUp($cacheDir);
     }
 
     public function testAuditingEntityOnPropertyChange(): void
@@ -58,6 +102,7 @@ final class AuditTest extends KernelTestCase
         $group = $this->em->getRepository(Group::class)
                           ->findOneBy(['entityClass' => Order::class, 'entityId' => $order->getId()]);
         self::assertNotNull($group);
+        self::assertSame(self::MOCK_USER_NAME, $group->getUsername());
 
         assert($group instanceof Group);
         self::assertEmpty($group->getComment());
@@ -76,7 +121,7 @@ final class AuditTest extends KernelTestCase
         $this->em->flush();
 
         $order->setTotalItems(43);
-        $store = self::$container->get(Store::class);
+        $store = self::getContainer()->get(Store::class);
         assert($store instanceof Store);
         $store->describe($order, 'Total items change test');
         $this->em->flush();
@@ -104,7 +149,7 @@ final class AuditTest extends KernelTestCase
         $this->em->flush();
 
         $setter($newDate);
-        $store = self::$container->get(Store::class);
+        $store = self::getContainer()->get(Store::class);
         assert($store instanceof Store);
         $store->describe($order, 'Total items change test');
         $this->em->flush();
@@ -117,7 +162,8 @@ final class AuditTest extends KernelTestCase
         self::assertSame($newDate->format('c'), $entries[0]->getValueAfter());
     }
 
-    public function testNullableDateInValueBefore(): void {
+    public function testNullableDateInValueBefore(): void
+    {
         $order = new Order('test', 1);
         $order->setExecutedTs(null);
 
@@ -133,7 +179,8 @@ final class AuditTest extends KernelTestCase
         self::assertSame('2020-01-02T03:00:00+00:00', $entries[0]->getValueAfter());
     }
 
-    public function testNullableDateInValueAfter(): void {
+    public function testNullableDateInValueAfter(): void
+    {
         $order = new Order('test', 1);
         $order->setExecutedTs(new \DateTimeImmutable('2020-01-02T03:00:00+00:00'));
 

@@ -18,6 +18,6 @@ use Exception;
  *
  * Triggered when mapping user argument is not valid or incomplete.
  */
-class InvalidMappingException extends Exception implements DoctrineAuditableExceptionInterface
+final class InvalidMappingException extends Exception implements DoctrineAuditableExceptionInterface
 {
 }

@@ -25,10 +25,10 @@ use function spl_object_hash;
 /**
  * Collects entities changes' description to be saved as changelog description for managed entities by auditable
  *
- * This is more cleaner alternative for retrieving changelog comment from entity (
+ * This is cleaner alternative for retrieving changelog comment from entity (
  * because it's application layer violation)
  */
-class Store
+final class Store
 {
     /**
      * Stack of entities' changes description
