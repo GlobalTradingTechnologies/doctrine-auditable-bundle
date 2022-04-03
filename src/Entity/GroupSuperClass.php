@@ -13,12 +13,17 @@ namespace Gtt\Bundle\DoctrineAuditableBundle\Entity;
 
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\Column;
+use Doctrine\ORM\Mapping\GeneratedValue;
+use Doctrine\ORM\Mapping\Id;
+use Doctrine\ORM\Mapping\MappedSuperclass;
 
 /**
  * ChangeSet group
  *
  * @ORM\MappedSuperclass
  */
+#[MappedSuperclass]
 class GroupSuperClass
 {
     /**
@@ -30,6 +35,9 @@ class GroupSuperClass
      * @ORM\Column(type="integer")
      * @ORM\GeneratedValue(strategy="AUTO")
      */
+    #[Id]
+    #[GeneratedValue(strategy: 'AUTO')]
+    #[Column(type: 'integer')]
     protected int $id;
 
     /**
@@ -37,6 +45,7 @@ class GroupSuperClass
      *
      * @ORM\Column(type="datetime_immutable", name="created_ts", columnDefinition="TIMESTAMP NULL DEFAULT NULL")
      */
+    #[Column(name: 'created_ts', type: 'datetime_immutable', columnDefinition: 'TIMESTAMP NULL DEFAULT NULL')]
     protected DateTimeImmutable $createdTs;
 
     /**
@@ -44,6 +53,7 @@ class GroupSuperClass
      *
      * @ORM\Column(type="string", name="username", nullable=true)
      */
+    #[Column(name: 'username', type: 'string', nullable: true)]
     protected ?string $username;
 
     /**
@@ -53,6 +63,7 @@ class GroupSuperClass
      *
      * @ORM\Column(name="entity_class", type="string", length=255)
      */
+    #[Column(name: 'entity_class', type: 'string', length: 255)]
     protected string $entityClass;
 
     /**
@@ -62,6 +73,7 @@ class GroupSuperClass
      *
      * @ORM\Column(name="entity_id", type="string", length=255)
      */
+    #[Column(name: 'entity_id', type: 'string', length: 255)]
     protected string $entityId;
 
     /**
@@ -71,6 +83,7 @@ class GroupSuperClass
      *
      * @ORM\Column(type="text", nullable=true)
      */
+    #[Column(type: 'text', nullable: true)]
     protected ?string $comment;
 
     /**

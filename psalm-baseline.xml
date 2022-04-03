@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files psalm-version="4.16.1@aa7e400908833b10c0333861f86cd48c510b60eb">
+  <file src="src/CacheWarmer/AuditableMetadataWarmer.php">
+    <ArgumentTypeCoercion occurrences="1">
+      <code>$metadata</code>
+    </ArgumentTypeCoercion>
+  </file>
+  <file src="src/DependencyInjection/Configuration.php">
+    <PossiblyUndefinedMethod occurrences="1">
+      <code>children</code>
+    </PossiblyUndefinedMethod>
+  </file>
+  <file src="src/DependencyInjection/DoctrineAuditableExtension.php">
+    <PossiblyNullArgument occurrences="1">
+      <code>$this-&gt;getConfiguration($configs, $container)</code>
+    </PossiblyNullArgument>
+  </file>
+  <file src="src/Event/AuditableListener.php">
+    <PossiblyNullArgument occurrences="1">
+      <code>$this-&gt;readEntityId($entity)</code>
+    </PossiblyNullArgument>
+  </file>
+  <file src="src/Log/Store.php">
+    <PossiblyNullArgument occurrences="1">
+      <code>$entityManager</code>
+    </PossiblyNullArgument>
+  </file>
+</files>

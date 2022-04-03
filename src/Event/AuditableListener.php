@@ -24,22 +24,17 @@ use Gtt\Bundle\DoctrineAuditableBundle\Entity\Group;
 use Gtt\Bundle\DoctrineAuditableBundle\Entity\GroupSuperClass;
 use Gtt\Bundle\DoctrineAuditableBundle\Exception\InvalidMappingException;
 use Gtt\Bundle\DoctrineAuditableBundle\Log\Store;
-use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\AnnotationInterface;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 use function array_intersect;
 use function array_key_exists;
 use function array_keys;
-use function array_merge_recursive;
-use function array_reverse;
 use function array_shift;
-use function array_values;
 use function count;
 use function get_class;
 use function is_string;
 use function method_exists;
 use function spl_object_hash;
-use function str_replace;
 
 /**
  * Auditable subscriber
@@ -55,11 +50,6 @@ class AuditableListener
      * Token storage
      */
     protected ?TokenStorageInterface $tokenStorage;
-
-    /**
-     * Annotation reader
-     */
-    protected AnnotationInterface $reader;
 
     /**
      * Entity manager
@@ -80,18 +70,20 @@ class AuditableListener
      */
     private array $logStore = [];
 
+    private string $cacheDir;
+
     /**
      * AuditableListener constructor.
      *
      * @param Store                      $store        Auditable store
      * @param TokenStorageInterface|null $tokenStorage Token storage
-     * @param AnnotationInterface        $reader       Annotation reader
+     * @param string                     $cacheDir     Cache directory containing warmed up auditable metadata
      */
-    public function __construct(Store $store, ?TokenStorageInterface $tokenStorage, AnnotationInterface $reader)
+    final public function __construct(Store $store, ?TokenStorageInterface $tokenStorage, string $cacheDir)
     {
         $this->store        = $store;
-        $this->reader       = $reader;
         $this->tokenStorage = $tokenStorage;
+        $this->cacheDir     = $cacheDir;
     }
 
     /**
@@ -105,10 +97,7 @@ class AuditableListener
     {
         $this->entityManager = $eventArgs->getEntityManager();
         $uow                 = $this->entityManager->getUnitOfWork();
-
-        if ($this->store !== null) {
-            $this->logStore = $this->store->pop($this->entityManager);
-        }
+        $this->logStore      = $this->store->pop($this->entityManager);
 
         foreach ($uow->getScheduledEntityUpdates() as $entity) {
             $this->createLogEntry($entity);
@@ -147,14 +136,8 @@ class AuditableListener
         $affectedAuditableAssociations = array_intersect(array_keys($toOneChangeSet), $config['columns']);
 
         if (count($affectedAuditableColumns) > 0 || count($affectedAuditableAssociations) > 0) {
-            $comment = null;
-            if ($this->store !== null) {
-                $entityHash  = spl_object_hash($entity);
-                if (array_key_exists($entityHash, $this->logStore)) {
-                    $comment_ = $this->logStore[$entityHash];
-                    $comment  = $comment_ ?? $comment;  // let this strategy override comment retrieved by old strategy
-                }
-            }
+            $entityHash = spl_object_hash($entity);
+            $comment    = $this->logStore[$entityHash] ?? null;
 
             $group = $this->createGroup(
                 new DateTimeImmutable(),
@@ -180,8 +163,8 @@ class AuditableListener
                 [$valueBefore, $valueAfter] = $columnsChangeSet[$column];
 
                 if ($type instanceof DateTimeType || $type instanceof DateTimeTzType) {
-                    $valueBefore = $valueBefore === null ? null : $valueBefore->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
-                    $valueAfter  = $valueAfter === null ? null : $valueAfter->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
+                    $valueBefore = $valueBefore?->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
+                    $valueAfter  = $valueAfter?->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
                 } elseif ($type instanceof Type) {
                     $platform    = $this->entityManager->getConnection()->getDatabasePlatform();
                     $valueBefore = $type->convertToDatabaseValue($valueBefore, $platform);
@@ -346,6 +329,11 @@ class AuditableListener
         string $relatedStringBefore = null,
         string $relatedStringAfter = null
     ): EntrySuperClass {
+        \assert(
+            $group instanceof Group,
+            'Method ' . __METHOD__ . ' should be override when ' . __CLASS__ . '::createGroup is override'
+        );
+
         return new Entry(
             $group,
             $entityColumn,
@@ -373,7 +361,7 @@ class AuditableListener
             return null;
         }
 
-        return $token->getUsername();
+        return $token->getUserIdentifier();
     }
 
     /**
@@ -388,68 +376,14 @@ class AuditableListener
      */
     private function getClassConfiguration(ClassMetadataInfo $meta): array
     {
-        if (isset($this->configs[$meta->name])) {
-            return $this->configs[$meta->name];
+        if (!isset($this->configs[$meta->name])) {
+            $configEntry = $this->cacheDir . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, ltrim($meta->name, '\\')) . '.php';
+
+            $this->configs[$meta->name] = \is_file($configEntry)
+                ? include $configEntry
+                : [];
         }
-
-        $factory     = $this->entityManager->getMetadataFactory();
-        $cacheDriver = $factory->getCacheDriver();
-        if ($cacheDriver !== null) {
-            $cacheId = $this->generateCacheId($meta->name);
-
-            $config = $cacheDriver->fetch($cacheId);
-            if ($config !== false) {
-                $this->configs[$meta->name] = $this->getAuditableSettings($meta);
-
-                return $this->configs[$meta->name];
-            }
-        }
-
-        // Re-fetch metadata on cache miss
-        $this->configs[$meta->name] = $this->getAuditableSettings($meta);
 
         return $this->configs[$meta->name];
-    }
-
-    /**
-     * Build class configuration
-     *
-     * @param ClassMetadataInfo $meta Class metadata
-     *
-     * @throws InvalidMappingException
-     *
-     * @return array
-     */
-    private function getAuditableSettings(ClassMetadataInfo $meta): array
-    {
-        // if class has no parent, just return its configuration
-        // or read configuration for each parent class in inheritance chain,
-        // validate, merge them and return otherwise
-        if (empty($meta->parentClasses)) {
-            return $this->reader->read($meta->name);
-        }
-
-        $configurationToMergeMap = [$meta->name => $this->reader->read($meta->name)];
-        // 2. Retrieve all parent classes configuration
-        foreach (array_reverse($meta->parentClasses) as $parentClass) {  // from root to direct parent
-            $configurationToMergeMap[$parentClass] = $this->reader->read($parentClass);
-        }
-
-        // 3. Build final class configuration: perform configuration inheritance
-        $configurationToMergeList = array_values($configurationToMergeMap);
-        return array_merge_recursive(...$configurationToMergeList);
-    }
-
-
-    /**
-     * Generate the cache id
-     *
-     * @param string $class Entity class name
-     *
-     * @return string
-     */
-    private function generateCacheId(string $class): string
-    {
-        return str_replace('\\', '_', __CLASS__ . ' - ' . $class);
     }
 }

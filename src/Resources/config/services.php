@@ -9,21 +9,19 @@
 
 declare(strict_types=1);
 
+use Gtt\Bundle\DoctrineAuditableBundle\CacheWarmer\AuditableMetadataWarmer;
 use Gtt\Bundle\DoctrineAuditableBundle\Event\AuditableListener;
 use Gtt\Bundle\DoctrineAuditableBundle\Log\Store;
 use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\Annotation;
-use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\CachedAnnotation;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
 return static function (ContainerConfigurator $container): void {
     $container->parameters()
-        ->set('gtt.doctrine_auditable.subscriber_class', ''); // replaced by container extension
-
-    $reference = function_exists('Symfony\\Component\\DependencyInjection\\Loader\\Configurator\\service')
-        ? 'Symfony\\Component\\DependencyInjection\\Loader\\Configurator\\service'
-        : 'Symfony\\Component\\DependencyInjection\\Loader\\Configurator\\ref';
+        ->set('gtt.doctrine_auditable.subscriber_class', '') // replaced by container extension
+        ->set('gtt.doctrine_auditable.metadata_cache_path', 'gtt-auditable-bundle' . DIRECTORY_SEPARATOR . 'doctrine')
+    ;
 
     $container->services()
         ->defaults()
@@ -31,11 +29,17 @@ return static function (ContainerConfigurator $container): void {
             ->autoconfigure(false)
             ->private()
 
+        ->set(AuditableMetadataWarmer::class)
+            ->arg('$registry', service('doctrine'))
+            ->arg('$reader', service(Annotation::class))
+            ->arg('$cachePath', '%gtt.doctrine_auditable.metadata_cache_path%')
+            ->tag('kernel.cache_warmer')
+
         ->set(AuditableListener::class, '%gtt.doctrine_auditable.subscriber_class%')
             ->args([
-                $reference(Store::class),
-                $reference('security.token_storage')->nullOnInvalid(),
-                $reference(CachedAnnotation::class),
+                service(Store::class),
+                service('security.token_storage')->nullOnInvalid(),
+                '%kernel.cache_dir%/%gtt.doctrine_auditable.metadata_cache_path%',
             ])
             ->tag('doctrine.event_listener', [
                 'event'    => 'onFlush',
@@ -44,14 +48,11 @@ return static function (ContainerConfigurator $container): void {
             ])
 
         ->set(Annotation::class)
-            ->args([service('annotation_reader'), $reference('doctrine')])
-
-        ->set(CachedAnnotation::class)
-            ->args([$reference(Annotation::class), $reference('doctrine')])
+            ->args([service('annotation_reader'), service('doctrine')])
 
         ->set(Store::class)
             ->share()
-            ->args([$reference('doctrine')])
+            ->args([service('doctrine')])
             ->tag('doctrine.event_listener', [
                 'event'    => 'onFlush',
                 'method'   => 'onFlush',

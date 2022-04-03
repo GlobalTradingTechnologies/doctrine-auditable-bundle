@@ -16,7 +16,6 @@ use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 use function is_subclass_of;
-use function method_exists;
 
 /**
  * Defines bundle configuration structure
@@ -29,9 +28,7 @@ final class Configuration implements ConfigurationInterface
     public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('doctrine_auditable');
-        $rootNode    = method_exists($treeBuilder, 'getRootNode')
-            ? $treeBuilder->getRootNode()
-            : $treeBuilder->root('doctrine_auditable');
+        $rootNode    = $treeBuilder->getRootNode();
 
         $isWrongAbstraction = static function (string $subscriberClass): bool {
             return !is_subclass_of($subscriberClass, AuditableListener::class);

@@ -12,12 +12,17 @@ declare(strict_types=1);
 namespace Gtt\Bundle\DoctrineAuditableBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\Column;
+use Doctrine\ORM\Mapping\GeneratedValue;
+use Doctrine\ORM\Mapping\Id;
+use Doctrine\ORM\Mapping\MappedSuperclass;
 
 /**
  * ChangeSet entry
  *
  * @ORM\MappedSuperclass
  */
+#[MappedSuperclass]
 class EntrySuperClass
 {
     /**
@@ -29,6 +34,9 @@ class EntrySuperClass
      * @ORM\Column(type="bigint", options={"unsigned"=true})
      * @ORM\GeneratedValue(strategy="AUTO")
      */
+    #[Id]
+    #[GeneratedValue(strategy: 'AUTO')]
+    #[Column(type: 'bigint', options: ['unsigned' => true])]
     protected $id;
 
     /**
@@ -38,6 +46,7 @@ class EntrySuperClass
      *
      * @ORM\Column(name="entity_column", type="string", length=255)
      */
+    #[Column(name: 'entity_column', type: 'string', length: 255)]
     protected string $entityColumn;
 
     /**
@@ -47,6 +56,7 @@ class EntrySuperClass
      *
      * @ORM\Column(name="is_association", type="boolean")
      */
+    #[Column(name: 'is_association', type: 'boolean')]
     protected bool $association = false;
 
     /**
@@ -54,6 +64,7 @@ class EntrySuperClass
      *
      * @ORM\Column(name="value_before", type="string", length=255, nullable=true)
      */
+    #[Column(name: 'value_before', type: 'string', length: 255, nullable: true)]
     protected ?string $valueBefore;
 
     /**
@@ -61,6 +72,7 @@ class EntrySuperClass
      *
      * @ORM\Column(name="value_after", type="string", length=255, nullable=true)
      */
+    #[Column(name: 'value_after', type: 'string', length: 255, nullable: true)]
     protected ?string $valueAfter;
 
     /**
@@ -68,6 +80,7 @@ class EntrySuperClass
      *
      * @ORM\Column(name="related_string_before", type="string", length=255, nullable=true)
      */
+    #[Column(name: 'related_string_before', type: 'string', length: 255, nullable: true)]
     protected ?string $relatedStringBefore;
 
     /**
@@ -75,6 +88,7 @@ class EntrySuperClass
      *
      * @ORM\Column(name="related_string_after", type="string", length=255, nullable=true)
      */
+    #[Column(name: 'related_string_after', type: 'string', length: 255, nullable: true)]
     protected ?string $relatedStringAfter;
 
     /**

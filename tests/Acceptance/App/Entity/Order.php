@@ -18,42 +18,31 @@ use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation as Auditable;
 
 /**
  * Class Order
- *
- * @ORM\Entity()
- * @ORM\Table("orders")
- * @Auditable\Entity()
  */
+#[ORM\Entity]
+#[ORM\Table(name: 'orders')]
+#[Auditable\Entity]
 class Order
 {
-    /**
-     * @ORM\Id()
-     * @ORM\GeneratedValue(strategy="AUTO")
-     * @ORM\Column(type="integer")
-     */
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'AUTO')]
+    #[ORM\Column(type: 'integer')]
     private int $id;
 
-    /**
-     * @ORM\Column()
-     * @Auditable\Property()
-     */
+    #[ORM\Column]
+    #[Auditable\Property]
     private string $customer;
 
-    /**
-     * @ORM\Column()
-     * @Auditable\Property()
-     */
+    #[ORM\Column]
+    #[Auditable\Property]
     private int $totalItems;
 
-    /**
-     * @ORM\Column(type="datetime")
-     * @Auditable\Property()
-     */
+    #[ORM\Column(type: 'datetime')]
+    #[Auditable\Property]
     private DateTime $postedTs;
 
-    /**
-     * @ORM\Column(type="datetimetz_immutable", nullable=true)
-     * @Auditable\Property()
-     */
+    #[ORM\Column(type: 'datetimetz_immutable', nullable: true)]
+    #[Auditable\Property]
     private ?DateTimeImmutable $executedTs = null;
 
     public function __construct(string $customer, int $totalItems)

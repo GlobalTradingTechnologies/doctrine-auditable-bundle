@@ -40,7 +40,7 @@ bin/console doctrine:schema:update --force
 Usage
 =====
 
-Add annotation for tracking property
+Add attributes for tracking property
 ```php
 <?php
 
@@ -48,29 +48,19 @@ use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation as Auditable;
 
 /**
  * My entity
- *
- * @ORM\Entity
- * @ORM\Table(name="entity")
- *
- * @Auditable\Entity
  */
+ #[ORM\Entity]
+ #[ORM\Table(name: 'entity')]
+ #[Auditable\Entity]
 class Entity
 {
-    /**
-     * Name
-     *
-     * @var string
-     *
-     * @ORM\Column(type="string", name="name", length=255)
-     *
-     * @Auditable\Property
-     */
-    protected $assignedUser;
+     #[ORM\Column(name: 'assigned_user', type: 'string', length: 255)]
+     #[Auditable\Property]
+    protected string $assignedUser;
     
     ...
 }
 ```
-In php 8 you can use attributes instead of annotations.
 
 Then somewhere in a service change an entity property and flush the changes.
 ```php

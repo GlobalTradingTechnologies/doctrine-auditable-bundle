@@ -12,6 +12,9 @@ declare(strict_types=1);
 namespace Gtt\Bundle\DoctrineAuditableBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\Mapping\Entity;
+use Doctrine\ORM\Mapping\Index;
+use Doctrine\ORM\Mapping\Table;
 
 /**
  * ChangeSet entry
@@ -28,16 +31,21 @@ use Doctrine\ORM\Mapping as ORM;
  *
  * @author Pavel.Levin
  */
+#[Entity]
+#[Table(name: 'doctrine_auditable_entry')]
+#[Index(columns: ['entity_column', 'is_association'], name: 'ix_doctrine_auditable_entry_entity_column_is_association')]
+#[Index(columns: ['value_before'], name: 'ix_doctrine_auditable_entry_value_before')]
+#[Index(columns: ['value_after'], name: 'ix_doctrine_auditable_entry_value_after')]
 class Entry extends EntrySuperClass
 {
     /**
      * ChangeSet group
      *
-     * @var Group
-     *
      * @ORM\ManyToOne(targetEntity="Group")
      * @ORM\JoinColumn(name="group_id", referencedColumnName="id")
      */
+    #[ORM\ManyToOne(targetEntity: Group::class)]
+    #[ORM\JoinColumn(name: 'group_id', referencedColumnName: 'id')]
     protected Group $group;
 
     /**

@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['7.4', '8.0']
+        php: ['8.0', '8.1']
         path:
           - tests
 
@@ -27,5 +27,5 @@ jobs:
 
       -   uses: "ramsey/composer-install@v1"
 
-      -   run: vendor/bin/phpunit ${{ matrix.path }} 
+      -   run: vendor/bin/phpunit -c phpunit.xml
 

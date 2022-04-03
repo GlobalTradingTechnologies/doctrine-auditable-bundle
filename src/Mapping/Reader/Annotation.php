@@ -28,7 +28,7 @@ use function is_array;
  * This is an annotation mapping driver for Auditable behavioral extension.
  * Used for extraction of extended metadata from Annotations specifically for Auditable extension.
  */
-class Annotation implements AnnotationInterface
+final class Annotation implements AnnotationInterface
 {
     /**
      * Annotation reader instance
@@ -95,15 +95,16 @@ class Annotation implements AnnotationInterface
             }
         }
 
-        if (!$meta->isMappedSuperclass && $config) {
-            if (is_array($meta->identifier) && count($meta->identifier) > 1) {
-                throw new InvalidMappingException("Composite identifiers are not supported, found in class \"{$meta->name}\"");
-            }
+        if (!$meta->isMappedSuperclass && count($meta->identifier) > 1) {
+            throw new InvalidMappingException("Composite identifiers are not supported, found in class \"{$meta->name}\"");
         }
 
         return $config;
     }
 
+    /**
+     * @param class-string $annotation
+     */
     private function hasClassAnnotation(ReflectionClass $class, string $annotation): bool
     {
         if ($this->hasPhp80Attribute($class, $annotation)) {
@@ -113,6 +114,9 @@ class Annotation implements AnnotationInterface
         return $this->reader->getClassAnnotation($class, $annotation) !== null;
     }
 
+    /**
+     * @param class-string $annotation
+     */
     private function hasPropertyAnnotation(ReflectionProperty $property, string $annotation): bool
     {
         if ($this->hasPhp80Attribute($property, $annotation)) {
@@ -124,7 +128,7 @@ class Annotation implements AnnotationInterface
 
     /**
      * @param ReflectionClass|ReflectionProperty $reflection
-     * @param class-string                        $annotation
+     * @param class-string                       $annotation
      */
     private function hasPhp80Attribute($reflection, string $annotation): bool
     {
