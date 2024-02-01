@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace Gtt\Bundle\DoctrineAuditableBundle\Event;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Types\DateTimeType;
 use Doctrine\DBAL\Types\DateTimeTzType;
 use Doctrine\DBAL\Types\Type;
@@ -30,8 +31,10 @@ use function array_intersect;
 use function array_key_exists;
 use function array_keys;
 use function array_shift;
+use function assert;
 use function count;
 use function get_class;
+use function is_file;
 use function is_string;
 use function method_exists;
 use function spl_object_hash;
@@ -47,11 +50,6 @@ class AuditableListener
     private const DATETIME_WITH_TIMEZONE_FORMAT = 'c';
 
     /**
-     * Token storage
-     */
-    protected ?TokenStorageInterface $tokenStorage;
-
-    /**
      * Entity manager
      */
     protected EntityManagerInterface $entityManager;
@@ -61,16 +59,10 @@ class AuditableListener
      */
     private array $configs = [];
 
-    protected Store $store;
-
     /**
      * Store of change log of entity
-     *
-     * @var array
      */
     private array $logStore = [];
-
-    private string $cacheDir;
 
     /**
      * AuditableListener constructor.
@@ -79,23 +71,21 @@ class AuditableListener
      * @param TokenStorageInterface|null $tokenStorage Token storage
      * @param string                     $cacheDir     Cache directory containing warmed up auditable metadata
      */
-    final public function __construct(Store $store, ?TokenStorageInterface $tokenStorage, string $cacheDir)
-    {
-        $this->store        = $store;
-        $this->tokenStorage = $tokenStorage;
-        $this->cacheDir     = $cacheDir;
+    final public function __construct(
+        protected Store $store,
+        protected ?TokenStorageInterface $tokenStorage,
+        private readonly string $cacheDir
+    ) {
     }
 
     /**
      * Looks for auditable objects for further processing
      *
      * @param OnFlushEventArgs $eventArgs Event arguments
-     *
-     * @return void
      */
     public function onFlush(OnFlushEventArgs $eventArgs): void
     {
-        $this->entityManager = $eventArgs->getEntityManager();
+        $this->entityManager = $eventArgs->getObjectManager();
         $uow                 = $this->entityManager->getUnitOfWork();
         $this->logStore      = $this->store->pop($this->entityManager);
 
@@ -166,7 +156,8 @@ class AuditableListener
                     $valueBefore = $valueBefore?->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
                     $valueAfter  = $valueAfter?->format(self::DATETIME_WITH_TIMEZONE_FORMAT);
                 } elseif ($type instanceof Type) {
-                    $platform    = $this->entityManager->getConnection()->getDatabasePlatform();
+                    $platform = $this->entityManager->getConnection()->getDatabasePlatform();
+                    assert($platform instanceof AbstractPlatform);
                     $valueBefore = $type->convertToDatabaseValue($valueBefore, $platform);
                     $valueAfter  = $type->convertToDatabaseValue($valueAfter, $platform);
                 }
@@ -211,8 +202,6 @@ class AuditableListener
      *
      * @param ClassMetadataInfo $meta      Class metadata
      * @param array             $changeSet ChangeSet
-     *
-     * @return array
      */
     protected function getColumnsChangeSet(ClassMetadataInfo $meta, array $changeSet): array
     {
@@ -232,8 +221,6 @@ class AuditableListener
      *
      * @param ClassMetadataInfo $meta      Class metadata
      * @param array             $changeSet ChangeSet
-     *
-     * @return array
      */
     protected function getToOneChangeSet(ClassMetadataInfo $meta, array $changeSet): array
     {
@@ -253,10 +240,6 @@ class AuditableListener
 
     /**
      * Try to get entity string representation (via __toString)
-     *
-     * @param object $entity Entity
-     *
-     * @return null|string
      */
     protected function getEntityStringRepresentation(object $entity): ?string
     {
@@ -271,8 +254,6 @@ class AuditableListener
      * Read entity single ID value
      *
      * @param object|null $entity Entity
-     *
-     * @return string|null
      */
     protected function readEntityId(object $entity = null): ?string
     {
@@ -288,14 +269,6 @@ class AuditableListener
 
     /**
      * Create group instance
-     *
-     * @param DateTimeImmutable $createdTs   Crated timestamp
-     * @param string|null       $username    Username
-     * @param string            $entityClass Entity class name
-     * @param string            $entityId    Entity ID
-     * @param string|null       $comment     ChangeSet comment
-     *
-     * @return Group
      */
     protected function createGroup(
         DateTimeImmutable $createdTs,
@@ -317,8 +290,6 @@ class AuditableListener
      * @param string|null     $valueAfter          Value after
      * @param string|null     $relatedStringBefore Related entity string representation before update (if possible)
      * @param string|null     $relatedStringAfter  Related entity string representation after update (if possible)
-     *
-     * @return Entry
      */
     protected function createEntry(
         GroupSuperClass $group,
@@ -329,7 +300,7 @@ class AuditableListener
         string $relatedStringBefore = null,
         string $relatedStringAfter = null
     ): EntrySuperClass {
-        \assert(
+        assert(
             $group instanceof Group,
             'Method ' . __METHOD__ . ' should be override when ' . __CLASS__ . '::createGroup is override'
         );
@@ -347,21 +318,10 @@ class AuditableListener
 
     /**
      * Get current username
-     *
-     * @return string|null
      */
     protected function getUsername(): ?string
     {
-        if ($this->tokenStorage === null) {
-            return null;
-        }
-
-        $token = $this->tokenStorage->getToken();
-        if (null === $token) {
-            return null;
-        }
-
-        return $token->getUserIdentifier();
+        return $this->tokenStorage?->getToken()?->getUserIdentifier();
     }
 
     /**
@@ -371,15 +331,13 @@ class AuditableListener
      * @param ClassMetadataInfo $meta Class metadata
      *
      * @throws InvalidMappingException
-     *
-     * @return array
      */
     private function getClassConfiguration(ClassMetadataInfo $meta): array
     {
         if (!isset($this->configs[$meta->name])) {
             $configEntry = $this->cacheDir . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, ltrim($meta->name, '\\')) . '.php';
 
-            $this->configs[$meta->name] = \is_file($configEntry)
+            $this->configs[$meta->name] = is_file($configEntry)
                 ? include $configEntry
                 : [];
         }

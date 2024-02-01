@@ -14,7 +14,6 @@ namespace Gtt\Bundle\DoctrineAuditableBundle\Entity;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\Mapping\Entity;
 use Doctrine\ORM\Mapping\Index;
 use Doctrine\ORM\Mapping\OneToMany;
@@ -22,16 +21,6 @@ use Doctrine\ORM\Mapping\Table;
 
 /**
  * ChangeSet group
- *
- * @ORM\Entity
- * @ORM\Table(
- *  name="doctrine_auditable_group",
- *  indexes={
- *      @ORM\Index(name="ix_doctrine_auditable_group_created_ts", columns={"created_ts"}),
- *      @ORM\Index(name="ix_doctrine_auditable_group_entity_class_entity_id", columns={"entity_class", "entity_id"}),
- *      @ORM\Index(name="ix_doctrine_auditable_group_user_name", columns={"username"})
- *  }
- * )
  *
  * @author Pavel.Levin
  */
@@ -46,15 +35,10 @@ class Group extends GroupSuperClass
      * Group entries
      *
      * @var Collection<int, Entry>
-     *
-     * @ORM\OneToMany(targetEntity="Entry", mappedBy="group")
      */
     #[OneToMany(mappedBy: 'group', targetEntity: Entry::class)]
     private Collection $entries;
 
-    /**
-     * {@inheritdoc}
-     */
     public function __construct(
         DateTimeImmutable $createdTs,
         ?string $username,

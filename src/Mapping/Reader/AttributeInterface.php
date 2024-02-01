@@ -12,9 +12,9 @@ declare(strict_types=1);
 namespace Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader;
 
 /**
- * This is auditable annotation mapping reader interface
+ * This is auditable attribute mapping reader interface
  */
-interface AnnotationInterface
+interface AttributeInterface
 {
     /**
      * Read auditable metadata

@@ -12,11 +12,9 @@ declare(strict_types=1);
 namespace Gtt\Bundle\DoctrineAuditableBundle\Log;
 
 use Doctrine\Bundle\DoctrineBundle as Doctrine;
-use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Gtt\Bundle\DoctrineAuditableBundle\Exception;
-use ProxyManager\Proxy\ValueHolderInterface;
 
 use function array_key_exists;
 use function get_class;
@@ -33,27 +31,17 @@ final class Store
     /**
      * Stack of entities' changes description
      *
-     * @var array
-     *
      * @example [
      *             'entityManager_spl_object_hash' => [
      *               'entity_spl_object_hash' => 'changelog comment'
      *             ]
      *          ]
      */
-    private array $store;
+    private array $store = [];
 
-    private Registry $doctrineRegistry;
-
-    /**
-     * Logger constructor.
-     *
-     * @param Doctrine\Registry $doctrineRegistry
-     */
-    public function __construct(Doctrine\Registry $doctrineRegistry)
-    {
-        $this->doctrineRegistry = $doctrineRegistry;
-        $this->store            = [];
+    public function __construct(
+        private readonly Doctrine\Registry $doctrineRegistry
+    ) {
     }
 
     /**
@@ -73,12 +61,10 @@ final class Store
         $entityClass   = get_class($entity);
         $entityManager = $this->doctrineRegistry->getManagerForClass($entityClass);
 
-        if (null === $entityManager) {
-            throw new Exception\NoEntityManagerFoundException("No related EntityManager was found for given entity class `{$entityClass}`");
-        }
-
-        if ($entityManager instanceof ValueHolderInterface) {  // entity manager may be wrapped, unwrap it if it such
-            $entityManager = $entityManager->getWrappedValueHolderValue();
+        if ($entityManager === null) {
+            throw new Exception\NoEntityManagerFoundException(
+                "No related EntityManager was found for given entity class `{$entityClass}`"
+            );
         }
 
         $entityManagerHash = spl_object_hash($entityManager);
@@ -118,13 +104,11 @@ final class Store
     /**
      * Performs stack clean up, because stack can not live after changes flush
      *
-     * @param OnFlushEventArgs $event
-     *
      * @internal
      */
     public function onFlush(OnFlushEventArgs $event): void
     {
-        $entityManager     = $event->getEntityManager();
+        $entityManager     = $event->getObjectManager();
         $entityManagerHash = spl_object_hash($entityManager);
         unset($this->store[$entityManagerHash]);  // clean up expired stack
     }

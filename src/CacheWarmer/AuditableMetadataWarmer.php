@@ -14,31 +14,26 @@ namespace Gtt\Bundle\DoctrineAuditableBundle\CacheWarmer;
 use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\Persistence\ObjectManager;
-use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\AnnotationInterface;
+use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\AttributeInterface;
+use RuntimeException;
 use Symfony\Component\HttpKernel\CacheWarmer\CacheWarmerInterface;
+
+use function is_dir;
 
 /**
  * Generates cache with auditable attributes
  */
-final class AuditableMetadataWarmer implements CacheWarmerInterface
+final readonly class AuditableMetadataWarmer implements CacheWarmerInterface
 {
-    private Registry $registry;
-
     /**
-     * Generic undecorated attributes reader
+     * @param AttributeInterface $reader Generic undecorated attributes reader
+     * @param string             $cachePath Cache directory relative to kernel cache dir
      */
-    private AnnotationInterface $reader;
-
-    /**
-     * Cache directory relative to kernel cache dir
-     */
-    private string $cachePath;
-
-    public function __construct(Registry $registry, AnnotationInterface $reader, string $cachePath)
-    {
-        $this->registry  = $registry;
-        $this->reader    = $reader;
-        $this->cachePath = $cachePath;
+    public function __construct(
+        private Registry $registry,
+        private AttributeInterface $reader,
+        private string $cachePath
+    ) {
     }
 
     public function isOptional(): bool
@@ -46,7 +41,7 @@ final class AuditableMetadataWarmer implements CacheWarmerInterface
         return false;
     }
 
-    public function warmUp(string $cacheDir): array
+    public function warmUp(string $cacheDir, string $buildDir = null): array
     {
         foreach ($this->registry->getManagers() as $om) {
             $this->generateCacheForManager($om, $cacheDir);
@@ -75,8 +70,6 @@ final class AuditableMetadataWarmer implements CacheWarmerInterface
      * Build class configuration
      *
      * @param ClassMetadataInfo $meta Class metadata
-     *
-     * @return array
      */
     private function readAuditableSettings(ClassMetadataInfo $meta): array
     {
@@ -95,13 +88,16 @@ final class AuditableMetadataWarmer implements CacheWarmerInterface
 
         // 3. Build final class configuration: perform configuration inheritance
         $configurationToMergeList = array_values($configurationToMergeMap);
+
         return array_merge_recursive(...$configurationToMergeList);
     }
 
     private function createPath(string $path): string
     {
-        if (!\is_dir($path) && !mkdir($path, 0755, true) && !\is_dir($path)) {
-            throw new \RuntimeException(sprintf('Can not create metadata cache directory "%s" for auditable bundle', $path));
+        if (!is_dir($path) && !mkdir($path, 0755, true) && !is_dir($path)) {
+            throw new RuntimeException(
+                sprintf('Can not create metadata cache directory "%s" for auditable bundle', $path)
+            );
         }
 
         return $path;
@@ -117,7 +113,7 @@ final class AuditableMetadataWarmer implements CacheWarmerInterface
         $written = file_put_contents($baseDir . DIRECTORY_SEPARATOR . $relativeFullPath, $data);
 
         if ($written === false || strlen($data) !== $written) {
-            throw new \RuntimeException("Failed to write metadata cache for class \"$class\".");
+            throw new RuntimeException("Failed to write metadata cache for class \"$class\".");
         }
     }
 }
