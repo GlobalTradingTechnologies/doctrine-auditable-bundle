@@ -17,6 +17,7 @@ use Doctrine\ORM\Event\OnFlushEventArgs;
 use Gtt\Bundle\DoctrineAuditableBundle\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+
 use function spl_object_hash;
 
 /**
@@ -83,7 +84,7 @@ final class StoreTest extends TestCase
             ->willReturn($entityManager);
 
         $comment = 'Test entity changes description';
-        $entity = new Stub\Entity();
+        $entity  = new Stub\Entity();
 
         $store = new Store($doctrineRegistry);
         $store->describe($entity, $comment);
@@ -111,7 +112,7 @@ final class StoreTest extends TestCase
             ->willReturn($entityManager);
 
         $onFlushEventArgs = $this->getOnFlushEventArgsMock();
-        $onFlushEventArgs->expects(self::once())->method('getEntityManager')->willReturn($entityManager);
+        $onFlushEventArgs->expects(self::once())->method('getObjectManager')->willReturn($entityManager);
 
         $store = new Store($doctrineRegistry);
         $store->describe(new Stub\Entity(), 'whatever');

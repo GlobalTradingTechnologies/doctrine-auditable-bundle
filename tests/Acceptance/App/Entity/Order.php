@@ -14,7 +14,7 @@ namespace Gtt\Bundle\DoctrineAuditableBundle\Acceptance\App\Entity;
 use DateTime;
 use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
-use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation as Auditable;
+use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Attribute as Auditable;
 
 /**
  * Class Order
@@ -53,7 +53,6 @@ class Order
     }
 
     /**
-     * @return int
      */
     public function getId(): int
     {
@@ -61,7 +60,6 @@ class Order
     }
 
     /**
-     * @return string
      */
     public function getCustomer(): string
     {
@@ -69,7 +67,6 @@ class Order
     }
 
     /**
-     * @return int
      */
     public function getTotalItems(): int
     {
@@ -77,7 +74,6 @@ class Order
     }
 
     /**
-     * @param string $customer
      */
     public function setCustomer(string $customer): void
     {
@@ -85,7 +81,6 @@ class Order
     }
 
     /**
-     * @param int $totalItems
      */
     public function setTotalItems(int $totalItems): void
     {
@@ -93,7 +88,6 @@ class Order
     }
 
     /**
-     * @return DateTime
      */
     public function getPostedTs(): DateTime
     {
@@ -101,7 +95,6 @@ class Order
     }
 
     /**
-     * @param DateTime $postedTs
      */
     public function setPostedTs(DateTime $postedTs): void
     {

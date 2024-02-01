@@ -12,7 +12,7 @@ declare(strict_types=1);
 use Gtt\Bundle\DoctrineAuditableBundle\CacheWarmer\AuditableMetadataWarmer;
 use Gtt\Bundle\DoctrineAuditableBundle\Event\AuditableListener;
 use Gtt\Bundle\DoctrineAuditableBundle\Log\Store;
-use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\Annotation;
+use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\Attribute;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
@@ -31,7 +31,7 @@ return static function (ContainerConfigurator $container): void {
 
         ->set(AuditableMetadataWarmer::class)
             ->arg('$registry', service('doctrine'))
-            ->arg('$reader', service(Annotation::class))
+            ->arg('$reader', service(Attribute::class))
             ->arg('$cachePath', '%gtt.doctrine_auditable.metadata_cache_path%')
             ->tag('kernel.cache_warmer')
 
@@ -47,8 +47,8 @@ return static function (ContainerConfigurator $container): void {
                 'priority' => 10,
             ])
 
-        ->set(Annotation::class)
-            ->args([service('annotation_reader'), service('doctrine')])
+        ->set(Attribute::class)
+            ->arg('$registry', service('doctrine'))
 
         ->set(Store::class)
             ->share()

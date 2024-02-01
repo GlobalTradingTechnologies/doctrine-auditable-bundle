@@ -22,7 +22,7 @@ use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 final class DoctrineAuditableExtension extends Extension
 {
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function load(array $configs, ContainerBuilder $container): void
     {

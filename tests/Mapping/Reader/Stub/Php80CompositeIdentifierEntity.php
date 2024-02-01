@@ -11,16 +11,18 @@ declare(strict_types=1);
 
 namespace Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\Stub;
 
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Gtt\Bundle\DoctrineAuditableBundle\Mapping\Attribute as Auditable;
 
-/**
- * Class Php80Entity
- */
-#[Auditable\Entity()]
-final class Php80Entity extends AbstractEntity
+#[Auditable\Entity]
+class Php80CompositeIdentifierEntity
 {
-    #[Auditable\Property()]
-    public $auditableProperty;
+    public int $idOne;
 
-    public $notAuditableProperty;
+    public int $idTwo;
+
+    public static function loadMetadata(ClassMetadata $metadata): void
+    {
+        $metadata->setIdentifier(['idOne', 'idTwo']);
+    }
 }

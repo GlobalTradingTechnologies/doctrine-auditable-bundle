@@ -1,3 +1,12 @@
+UPGRADE from 5.x to 6.0
+-----------------------
+
+### Minimal PHP version is bumped to 8.3
+
+[BC Break] Removed `Gtt\Bundle\DoctrineAuditableBundle\Mapping\Reader\Annotation`. Now only the attribute is used
+
+Added symfony 7 support
+
 UPGRADE from 3.x to 4.0
 -----------------------
 

@@ -9,15 +9,12 @@
 
 declare(strict_types=1);
 
-namespace Gtt\Bundle\DoctrineAuditableBundle\Mapping\Annotation;
+namespace Gtt\Bundle\DoctrineAuditableBundle\Mapping\Attribute;
 
 use Attribute;
 
 /**
- * Annotation for auditable entity
- *
- * @Annotation
- * @Target("PROPERTY")
+ * Attribute for auditable entity
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]
 final class Property

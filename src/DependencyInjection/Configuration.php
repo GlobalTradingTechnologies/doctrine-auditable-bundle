@@ -20,10 +20,10 @@ use function is_subclass_of;
 /**
  * Defines bundle configuration structure
  */
-final class Configuration implements ConfigurationInterface
+final readonly class Configuration implements ConfigurationInterface
 {
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getConfigTreeBuilder(): TreeBuilder
     {
